@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from pet.config import get_settings
 
-from pet.infra.db.connection import create_engine, create_session_maker
+from pet.infra.sqlalchemy.db.connection import create_engine, create_session_maker
+from pet.api.exceptions_handler import register_exception_handlers
+from pet.api.organizations import organizationsAPI
 
 
 @asynccontextmanager
@@ -19,6 +21,6 @@ async def lifespan(app_: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-from pet.api.organizations import organizationsAPI
-
 app.include_router(organizationsAPI)
+
+register_exception_handlers(app)

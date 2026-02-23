@@ -1,9 +1,14 @@
 from types import TracebackType
 from typing import Self, Optional, Type
+from collections.abc import Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from collections.abc import Callable
 from pet.domain.repos import OrganizationsRepo
+from pet.infra.sqlalchemy.db.exc import determine_exc, UoWNotInitializedError
+
+# from pet.domain.exc import Conflict, DBError, DBErrorKind
+from sqlalchemy.exc import SQLAlchemyError
+
 
 OrganizationRepoFactory = Callable[[AsyncSession], OrganizationsRepo]
 AsyncSessionFactory = async_sessionmaker[AsyncSession]
@@ -40,7 +45,7 @@ class SQLAlchemyUnitOfWork:
         tb: Optional[TracebackType],
     ) -> None:
         if self._session is None:
-            raise Exception("UoW don't init")
+            raise UoWNotInitializedError("session")
 
         try:
             if exc is not None:
@@ -49,19 +54,29 @@ class SQLAlchemyUnitOfWork:
             await self.session.close()
 
     async def commit(self) -> None:
-        await self.session.commit()
+        try:
+            await self.session.commit()
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise determine_exc(e=e)
 
     async def rollback(self) -> None:
         await self.session.rollback()
 
+    async def flush(self) -> None:
+        await self.session.flush()
+
+    async def refresh(self, obj: object, attrs: list[str] | None = None) -> None:
+        await self.session.refresh(obj, attribute_names=attrs)
+
     @property
     def session(self) -> AsyncSession:
         if self._session is None:
-            raise Exception("поле session не инициализировано")
+            raise UoWNotInitializedError("session")
         return self._session
 
     @property
     def orgs(self) -> OrganizationsRepo:
         if self._orgs is None:
-            raise Exception("поле orgs не инициализировано")
+            raise UoWNotInitializedError("orgs")
         return self._orgs

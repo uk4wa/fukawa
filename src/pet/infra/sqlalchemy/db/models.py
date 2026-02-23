@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
 
-from pet.infra.db.base import Base
+from pet.infra.sqlalchemy.db.base import Base
 
 
 class IdMixin:

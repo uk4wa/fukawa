@@ -10,10 +10,8 @@ class CreateOrganizationCmdIn:
 
 
 async def create_organization_cmd(
-    cmd: CreateOrganizationCmdIn,
     uow: UnitOfWork,
+    cmd: CreateOrganizationCmdIn,
 ):
     domain_org = Organization.new(name=cmd.name)
-    async with uow:
-        uow.orgs.create(domain_org)
-        await uow.commit()
+    uow.orgs.create(domain_org)

@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from pet.domain.models import Organization as Domain
-from pet.infra.db.models import Organization as ORM
+from pet.infra.sqlalchemy.db.models import Organization as ORM
 
 
 class SQLAlchemyOrganizationsRepo:
