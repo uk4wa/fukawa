@@ -20,8 +20,8 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from pet.infra.db.models import Base
-from pet.infra.db.models import User, Organization, Project, Task, Membership
+from pet.infra.sqlalchemy.db.models import Base
+from pet.infra.sqlalchemy.db.models import User, Organization, Project, Task, Membership
 
 target_metadata = Base.metadata
 
