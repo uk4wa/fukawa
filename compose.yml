@@ -1,0 +1,62 @@
+name: pet-uk4wa
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=pet-ukawa
+      - DB__HOST=db
+      - DB__PORT=5432
+      - DB__NAME=sts
+      - DB__USER=admin
+      - DB__PASSWORD=admin
+    volumes:
+      - .:/app
+      - /app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DB__HOST=db
+      - DB__PORT=5432
+      - DB__NAME=sts
+      - DB__USER=admin
+      - DB__PASSWORD=admin
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    volumes:
+      - .:/app
+      - /app/.venv
+    restart: "unless-stopped"
+
+  db:
+    image: postgres:18
+    environment:
+      - POSTGRES_DB=sts
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d sts"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # start_period: 30s
+    volumes:
+      - pgdata:/var/lib/postgresql
+    restart: "unless-stopped"
+
+
+volumes:
+  pgdata:

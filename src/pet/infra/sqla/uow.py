@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from pet.domain.repos import OrganizationsRepo
-from pet.infra.sqlalchemy.db.exc import determine_exc, UoWNotInitializedError
+from pet.infra.sqla.db.exc import determine_exc, UoWNotInitializedError
 
 # from pet.domain.exc import Conflict, DBError, DBErrorKind
 from sqlalchemy.exc import SQLAlchemyError

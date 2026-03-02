@@ -1,7 +1,7 @@
 from fastapi import Request, Depends
 from pet.domain.uow import UnitOfWork
-from pet.infra.sqlalchemy.uow import SQLAlchemyUnitOfWork
-from pet.infra.sqlalchemy.db.repos import SQLAlchemyOrganizationsRepo
+from pet.infra.sqla.uow import SQLAlchemyUnitOfWork
+from pet.infra.sqla.db.repos import SQLAlchemyOrganizationsRepo
 from pet.infra.transaction_executor import TransactionExecutor
 from typing import Annotated, Callable
 

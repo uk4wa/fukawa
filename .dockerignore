@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Environment variables (СЕКРЕТЫ НЕ ДОЛЖНЫ ПОПАСТЬ В ОБРАЗ!)
+.env
+.env.*
+!.env.example
+
+# IDEs
+.vscode/
+.idea/
+
+# Testing & Tools
+tests/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Docker
+Dockerfile
+docker-compose.yml
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Type check / tooling
+.mypy_cache/
+.tox/
+.nox/
+
+# OS junk
+.DS_Store

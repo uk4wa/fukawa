@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
 
-from pet.infra.sqlalchemy.db.base import Base
+from pet.infra.sqla.db.base import Base
 
 
 class IdMixin:
@@ -24,7 +24,6 @@ class IdMixin:
         sa.Uuid(as_uuid=True),
         unique=True,
         nullable=False,
-        server_default=sa.text("gen_random_uuid()"),
     )
 
 

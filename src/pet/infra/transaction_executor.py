@@ -1,7 +1,5 @@
 from pet.domain.uow import UnitOfWork
-from typing import Awaitable, Callable
 from pet.domain.exc import DBError, translate_db_error
-
 from typing import Callable, Awaitable, Concatenate
 
 
