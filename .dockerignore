@@ -31,6 +31,7 @@ htmlcov/
 # Docker
 Dockerfile
 docker-compose.yml
+compose.yml
 
 # Build artifacts
 build/
