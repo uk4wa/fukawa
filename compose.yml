@@ -6,9 +6,7 @@ services:
     environment:
       - POSTGRES_DB=${DB__NAME}
       - POSTGRES_USER=${DB__USER}
-      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
-    env_file:
-      - .env
+      - POSTGRES_PASSWORD=${DB__PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -54,11 +52,6 @@ services:
       migrate:
         condition: service_completed_successfully
     restart: "unless-stopped"
-
-
-secrets:
-  password_db:
-    file: ../password_pg.txt
 
 volumes:
   pgdata:

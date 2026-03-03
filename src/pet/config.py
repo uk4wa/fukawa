@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, SecretStr, Field
 from functools import lru_cache
 from pathlib import Path
 
@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     app_name: str
 
     db: DatabaseSettings
-    engine: EngineSettings
-    session_maker: SessionMakerSettings
+    engine: EngineSettings = Field(default_factory=EngineSettings)
+    session_maker: SessionMakerSettings = Field(default_factory=SessionMakerSettings)
 
     @property
     def dsn(self):
