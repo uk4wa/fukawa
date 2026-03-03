@@ -1,27 +1,22 @@
 name: pet-uk4wa
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+  db:
+    image: postgres:18
     environment:
-      - APP_NAME=pet-ukawa
-      - DB__HOST=db
-      - DB__PORT=5432
-      - DB__NAME=sts
-      - DB__USER=admin
-      - DB__PASSWORD=admin
+      - POSTGRES_DB=${DB__NAME}
+      - POSTGRES_USER=${DB__USER}
+      - POSTGRES_PASSWORD=${DB__PASSWORD}
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # start_period: 30s
     volumes:
-      - .:/app
-      - /app/.venv
-    depends_on:
-      db:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
+      - pgdata:/var/lib/postgresql
     restart: "unless-stopped"
 
   migrate:
@@ -30,10 +25,10 @@ services:
       dockerfile: Dockerfile
     environment:
       - DB__HOST=db
-      - DB__PORT=5432
-      - DB__NAME=sts
-      - DB__USER=admin
-      - DB__PASSWORD=admin
+      - DB__PORT=${DB__PORT}
+      - DB__NAME=${DB__NAME}
+      - DB__USER=${DB__USER}
+      - DB__PASSWORD=${DB__PASSWORD}
     depends_on:
       db:
         condition: service_healthy
@@ -41,22 +36,29 @@ services:
     volumes:
       - .:/app
       - /app/.venv
-    restart: "unless-stopped"
+    restart: "no"
 
-  db:
-    image: postgres:18
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
     environment:
-      - POSTGRES_DB=sts
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d sts"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      # start_period: 30s
+      - APP_NAME=${APP_NAME}
+      - DB__HOST=db
+      - DB__PORT=${DB__PORT}
+      - DB__NAME=${DB__NAME}
+      - DB__USER=${DB__USER}
+      - DB__PASSWORD=${DB__PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql
+      - .:/app
+      - /app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: "unless-stopped"
 
 
