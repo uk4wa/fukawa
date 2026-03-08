@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:18
     environment:
-      - POSTGRES_DB=${DB__NAME}
+      - POSTGRES_DB=${DB__NAME}`
       - POSTGRES_USER=${DB__USER}
       - POSTGRES_PASSWORD=${DB__PASSWORD}
     healthcheck:

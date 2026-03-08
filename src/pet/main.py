@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from pet.config import get_settings
 
+
 from pet.infra.sqla.db.connection import create_engine, create_session_maker
 from pet.api.exceptions_handler import register_exception_handlers
 from pet.api.organizations import organizationsAPI
@@ -28,8 +29,8 @@ async def lifespan(app_: FastAPI):
     await app_.state.engine.dispose()
 
 
-app = FastAPI(lifespan=lifespan)
-
-app.include_router(organizationsAPI)
-
-register_exception_handlers(app)
+def create_app(lifespan=lifespan) -> FastAPI:
+    app = FastAPI(lifespan=lifespan)
+    app.include_router(organizationsAPI)
+    register_exception_handlers(app)
+    return app
