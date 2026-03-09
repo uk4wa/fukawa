@@ -19,7 +19,7 @@ ENV DEBUG=True \
 
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", \
-    "--host", "0.0.0.0", \
-    "--port", "8000", \
-    "pet.main:app"]
+CMD ["uv", "run", "uvicorn" \
+    ,"--port", "8000" \
+    ,"--host", "0.0.0.0" \
+    ,"pet.main:create_app"]

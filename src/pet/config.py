@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+APP_NAME = "pet-uk4wa"
 
 
 class DatabaseSettings(BaseModel):
@@ -27,15 +28,20 @@ class SessionMakerSettings(BaseModel):
 
 
 class Settings(BaseSettings):
-    debug: bool
-    app_name: str
+    debug: bool = False
+    app_name: str = APP_NAME
 
-    db: DatabaseSettings
+    db_url: str | None = None
+    db: DatabaseSettings | None = None
     engine: EngineSettings = Field(default_factory=EngineSettings)
     session_maker: SessionMakerSettings = Field(default_factory=SessionMakerSettings)
 
     @property
     def dsn(self):
+        if self.db_url is not None:
+            return self.db_url
+
+        assert self.db is not None
         return (
             f"postgresql+asyncpg://{self.db.user}:"
             f"{self.db.password.get_secret_value()}@"

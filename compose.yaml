@@ -4,54 +4,55 @@ services:
   db:
     image: postgres:18
     environment:
-      - POSTGRES_DB=${DB__NAME}
-      - POSTGRES_USER=${DB__USER}
-      - POSTGRES_PASSWORD=${DB__PASSWORD}
+      - POSTGRES_DB=$DB__NAME
+      - POSTGRES_USER=$DB__USER
+      - POSTGRES_PASSWORD=$DB__PASSWORD
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $DB__USER -d $DB__NAME"]
       interval: 10s
       timeout: 5s
       retries: 5
-      # start_period: 30s
+    restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql
-    restart: "unless-stopped"
 
   migrate:
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      - DB__HOST=db
-      - DB__PORT=${DB__PORT}
-      - DB__NAME=${DB__NAME}
-      - DB__USER=${DB__USER}
-      - DB__PASSWORD=${DB__PASSWORD}
+      APP_NAME: $APP_NAME
+      DB__HOST: db
+      DB__PORT: $DB__PORT
+      DB__NAME: $DB__NAME
+      DB__USER: $DB__USER
+      DB__PASSWORD: $DB__PASSWORD
+    restart: no
     depends_on:
       db:
         condition: service_healthy
     command: ["uv", "run", "alembic", "upgrade", "head"]
-    restart: "no"
 
   app:
-    build:
+    build: 
       context: .
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
-      - APP_NAME=${APP_NAME}
-      - DB__HOST=db
-      - DB__PORT=${DB__PORT}
-      - DB__NAME=${DB__NAME}
-      - DB__USER=${DB__USER}
-      - DB__PASSWORD=${DB__PASSWORD}
+      APP_NAME: $APP_NAME
+      DB__HOST: db
+      DB__PORT: $DB__PORT
+      DB__NAME: $DB__NAME
+      DB__USER: $DB__USER
+      DB__PASSWORD: $DB__PASSWORD
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    restart: "unless-stopped"
 
+      
 volumes:
   pgdata:
