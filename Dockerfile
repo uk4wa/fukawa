@@ -40,18 +40,3 @@ COPY alembic.ini .
 RUN uv sync --frozen --group migration --no-dev
 
 CMD ["uv", "run", "--no-sync", "alembic", "upgrade", "head"]
-
-FROM base AS test-deps
-
-RUN uv sync --frozen --no-install-project --group migration --group test --no-default-groups
-
-FROM test-deps AS test
-
-COPY src/ src/
-COPY tests/ tests/
-COPY alembic.ini .
-COPY alembic/ alembic/
-
-RUN uv sync --frozen --group migration --group test --no-default-groups
-
-CMD ["uv", "run", "--no-sync", "pytest", "-vv"]
