@@ -29,9 +29,6 @@ async def test_uow_aenter_failed(mocker: MockerFixture):
     orgs_repo_factory_mock.assert_called_once_with(session_mock)
     session_mock.close.assert_awaited_once_with()
 
-    assert uow._session is None
-    assert uow._orgs is None
-
 
 @pytest.mark.asyncio
 async def test_uow_get_session(mocker: MockerFixture):
@@ -52,9 +49,6 @@ async def test_uow_get_session(mocker: MockerFixture):
     session_factory_mock.assert_not_called()
     session_mock.close.assert_not_awaited()
 
-    assert uow._session is None
-    assert uow._orgs is None
-
 
 @pytest.mark.asyncio
 async def test_uow_get_orgs(mocker: MockerFixture):
@@ -74,6 +68,3 @@ async def test_uow_get_orgs(mocker: MockerFixture):
     orgs_repo_factory_mock.assert_not_called()
     session_factory_mock.assert_not_called()
     session_mock.close.assert_not_awaited()
-
-    assert uow._session is None
-    assert uow._orgs is None

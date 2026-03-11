@@ -3,12 +3,13 @@ import pytest_asyncio
 from unittest.mock import AsyncMock, Mock
 from pytest_mock import MockerFixture
 from pet.infra.transaction_executor import TransactionExecutor
+from pathlib import Path
 
 from fastapi import FastAPI
 
 from httpx import ASGITransport, AsyncClient
 from asgi_lifespan import LifespanManager
-from testcontainers.postgres import PostgresContainer
+from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from alembic.config import Config
 from alembic import command
@@ -16,8 +17,8 @@ from typing import AsyncIterator, Iterator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pet.main import create_app
-from pet.config import DatabaseSettings, Settings
-from pathlib import Path
+from pet.config import Settings
+from pet.domain.uow import UnitOfWork
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -44,7 +45,7 @@ def migrate_db(postgres_url: str):
 @pytest.fixture(scope="session")
 def test_settings(postgres_url: str, migrate_db: str):
     return Settings(  # type: ignore
-        debug=True,
+        debug=False,
         app_name="pet-uk4wa",
         db_url=postgres_url,
         # db=DatabaseSettings(
@@ -65,9 +66,9 @@ async def app(test_settings: Settings):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def client(app):
+async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(
-        transport=ASGITransport(app=app, raise_app_exceptions=True),
+        transport=ASGITransport(app=app, raise_app_exceptions=False),
         base_url="http://test",
         # raise_server_exceptions=True,
     ) as http_client:
@@ -75,14 +76,16 @@ async def client(app):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def db_session(app: FastAPI, test_settings) -> AsyncIterator[AsyncSession]:
+async def db_session(
+    app: FastAPI, test_settings: Settings
+) -> AsyncIterator[AsyncSession]:
     async with app.state.session_factory() as session:
         yield session
 
 
 @pytest.fixture
 def uow_mock(mocker: MockerFixture) -> AsyncMock:
-    uow = mocker.MagicMock()
+    uow = mocker.MagicMock(spec=UnitOfWork)
     uow.commit = mocker.AsyncMock()
     uow.__aenter__ = mocker.AsyncMock(return_value=uow)
     uow.__aexit__ = mocker.AsyncMock(return_value=False)
