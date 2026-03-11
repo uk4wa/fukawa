@@ -1,10 +1,11 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-
-from pet.domain.uow import UnitOfWork
-from pet.domain.models import Organization
-from pet.domain.value_objects import Name as NameVO, PublicId as PublicIdVO
-from typing import Callable
 from uuid import UUID, uuid4
+
+from pet.domain.models import Organization
+from pet.domain.uow import UnitOfWork
+from pet.domain.value_objects import Name as NameVO
+from pet.domain.value_objects import PublicId as PublicIdVO
 
 
 @dataclass(frozen=True)

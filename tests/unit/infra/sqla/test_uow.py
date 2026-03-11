@@ -1,10 +1,11 @@
-from pet.infra.sqla.uow import SQLAlchemyUnitOfWork
+from dataclasses import dataclass
+
 import pytest
 from pytest_mock import MockerFixture
-from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pet.infra.sqla.db.exc import UoWNotInitializedError
+from pet.infra.sqla.uow import SQLAlchemyUnitOfWork
 
 
 @pytest.mark.asyncio

@@ -1,12 +1,12 @@
-from fastapi import FastAPI
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from pet.config import Settings, get_settings
-from typing import AsyncIterator
 
+from fastapi import FastAPI
 
-from pet.infra.sqla.db.connection import create_engine, create_session_maker
 from pet.api.exceptions_handler import register_exception_handlers
 from pet.api.organizations import organizationsAPI
+from pet.config import Settings, get_settings
+from pet.infra.sqla.db.connection import create_engine, create_session_maker
 
 
 def build_lifespan(settings: Settings):

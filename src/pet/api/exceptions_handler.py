@@ -1,14 +1,16 @@
+import logging
 from typing import Any
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from starlette.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import JSONResponse
 from starlette.status import (
     HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
+
 from pet.domain.exc import AppError, DBError
-import logging
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 

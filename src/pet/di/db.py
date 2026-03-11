@@ -1,9 +1,12 @@
-from fastapi import Request, Depends
+from collections.abc import Callable
+from typing import Annotated
+
+from fastapi import Depends, Request
+
 from pet.domain.uow import UnitOfWork
-from pet.infra.sqla.uow import SQLAlchemyUnitOfWork
 from pet.infra.sqla.db.repos import SQLAlchemyOrganizationsRepo
+from pet.infra.sqla.uow import SQLAlchemyUnitOfWork
 from pet.infra.transaction_executor import TransactionExecutor
-from typing import Annotated, Callable
 
 
 def get_uow(r: Request) -> UnitOfWork:

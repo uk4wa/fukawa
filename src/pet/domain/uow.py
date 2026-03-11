@@ -1,5 +1,7 @@
-from typing import Protocol, Self, Type, Optional, Callable, Concatenate, Awaitable
+from collections.abc import Awaitable, Callable
 from types import TracebackType
+from typing import Concatenate, Protocol, Self
+
 from pet.domain.repos import OrganizationsRepo
 
 
@@ -11,9 +13,9 @@ class UnitOfWork(Protocol):
     async def __aenter__(self) -> Self: ...
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc: Optional[BaseException],
-        tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
     ) -> None: ...
 
     async def commit(self) -> None: ...

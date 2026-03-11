@@ -4,10 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 
-from pet.domain.uow import TransactionExecutor
-from pet.di.db import get_executor
 from pet.app.organizations import CreateOrganizationCmdIn, create_organization_cmd
-
+from pet.di.db import get_executor
+from pet.domain.uow import TransactionExecutor
 
 organizationsAPI = APIRouter(prefix="/orgs")
 

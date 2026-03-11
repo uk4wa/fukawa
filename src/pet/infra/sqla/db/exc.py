@@ -1,5 +1,6 @@
-from pet.domain.exc import DBError, DBErrorKind
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
+
+from pet.domain.exc import DBError, DBErrorKind
 
 
 def pg_sqlstate_from_integrity(err: Exception) -> str | None:

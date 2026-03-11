@@ -1,6 +1,8 @@
-from pet.domain.uow import UnitOfWork
+from collections.abc import Awaitable, Callable
+from typing import Concatenate
+
 from pet.domain.exc import DBError, translate_db_error
-from typing import Callable, Awaitable, Concatenate
+from pet.domain.uow import UnitOfWork
 
 
 class TransactionExecutor:

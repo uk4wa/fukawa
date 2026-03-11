@@ -1,14 +1,13 @@
-from types import TracebackType
-from typing import Self, Optional, Type
 from collections.abc import Callable
-
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from pet.domain.repos import OrganizationsRepo
-from pet.infra.sqla.db.exc import determine_exc, UoWNotInitializedError
+from types import TracebackType
+from typing import Self
 
 # from pet.domain.exc import Conflict, DBError, DBErrorKind
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from pet.domain.repos import OrganizationsRepo
+from pet.infra.sqla.db.exc import UoWNotInitializedError, determine_exc
 
 OrganizationRepoFactory = Callable[[AsyncSession], OrganizationsRepo]
 AsyncSessionFactory = async_sessionmaker[AsyncSession]
@@ -40,9 +39,9 @@ class SQLAlchemyUnitOfWork:
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc: Optional[BaseException],
-        tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
     ) -> None:
         if self._session is None:
             raise UoWNotInitializedError("session")

@@ -1,12 +1,13 @@
+from uuid import UUID
+
 import pytest
 from pytest_mock import MockerFixture
 
 from pet.app.organizations import (
-    create_organization_cmd,
     CreateOrganizationCmdIn,
+    create_organization_cmd,
 )
 from pet.domain.models import Organization as OrganizationORM
-from uuid import UUID
 
 
 @pytest.mark.asyncio

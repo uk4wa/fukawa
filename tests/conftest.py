@@ -1,24 +1,22 @@
+from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock
+
 import pytest
 import pytest_asyncio
-from unittest.mock import AsyncMock, Mock
-from pytest_mock import MockerFixture
-from pet.infra.transaction_executor import TransactionExecutor
-from pathlib import Path
-
-from fastapi import FastAPI
-
-from httpx import ASGITransport, AsyncClient
+from alembic import command
+from alembic.config import Config
 from asgi_lifespan import LifespanManager
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
+from pytest_mock import MockerFixture
+from sqlalchemy.ext.asyncio import AsyncSession
 from testcontainers.postgres import PostgresContainer  # type: ignore
 
-from alembic.config import Config
-from alembic import command
-from typing import AsyncIterator, Iterator
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from pet.main import create_app
 from pet.config import Settings
 from pet.domain.uow import UnitOfWork
+from pet.infra.transaction_executor import TransactionExecutor
+from pet.main import create_app
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -36,7 +34,7 @@ def postgres_url(postgres_container: PostgresContainer) -> str:
 
 @pytest.fixture(scope="session", autouse=True)
 def migrate_db(postgres_url: str):
-    config = Config(str("alembic.ini"))
+    config = Config("alembic.ini")
     config.set_main_option("sqlalchemy.url", postgres_url)
     command.upgrade(config, "head")
     return postgres_url

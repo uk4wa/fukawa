@@ -1,14 +1,15 @@
+import enum
+import uuid
+from datetime import datetime
+
 import sqlalchemy as sa
 from sqlalchemy import (
     BigInteger,
     DateTime,
-    func,
     String,
+    func,
 )
-import uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime
-import enum
 
 from pet.infra.sqla.db.base import Base
 

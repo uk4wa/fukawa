@@ -1,4 +1,5 @@
 from typing import Protocol
+
 from pet.domain.models import Organization
 
 

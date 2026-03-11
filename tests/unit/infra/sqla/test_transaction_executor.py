@@ -1,6 +1,8 @@
+from unittest.mock import ANY, AsyncMock, Mock
+
 import pytest
-from unittest.mock import ANY, Mock, AsyncMock
 from pytest_mock import MockerFixture
+
 from pet.infra.transaction_executor import TransactionExecutor
 
 

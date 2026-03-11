@@ -1,8 +1,8 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import BaseModel, SecretStr, Field
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import BaseModel, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parents[2]
 APP_NAME = "pet-uk4wa"

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from pet.domain.value_objects import PublicId, Name
+
+from pet.domain.value_objects import Name, PublicId
 
 
 @dataclass(slots=True, frozen=True)

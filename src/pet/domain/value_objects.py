@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from uuid import UUID
+
 from pet.domain.exc import NameValidationError
 
 

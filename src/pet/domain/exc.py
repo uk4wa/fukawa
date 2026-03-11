@@ -1,6 +1,6 @@
+import enum
 from dataclasses import dataclass
 from typing import Any
-import enum
 
 
 @dataclass(slots=True)

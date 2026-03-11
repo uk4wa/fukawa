@@ -1,10 +1,9 @@
 import pytest
 from pytest_mock import MockerFixture
-
-from pet.domain.exc import DBError, DBErrorKind
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
-from pet.infra.sqla.db.exc import pg_sqlstate_from_integrity, determine_exc
-from pet.domain.exc import translate_db_error, InternalError, Conflict
+
+from pet.domain.exc import Conflict, DBError, DBErrorKind, InternalError, translate_db_error
+from pet.infra.sqla.db.exc import determine_exc, pg_sqlstate_from_integrity
 
 # determine_exc tests
 
