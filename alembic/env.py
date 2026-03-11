@@ -43,7 +43,7 @@ def get_database_url() -> str:
     url = config.get_main_option("sqlalchemy.url")
     if url:
         return url
-    url = os.getenv("DATABASE_URL")
+    url = os.getenv("DB_URL")
 
     if url:
         return url

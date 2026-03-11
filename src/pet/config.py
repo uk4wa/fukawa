@@ -37,18 +37,19 @@ class Settings(BaseSettings):
     session_maker: SessionMakerSettings = Field(default_factory=SessionMakerSettings)
 
     @property
-    def dsn(self):
+    def dsn(self) -> str:
         if self.db_url is not None:
             return self.db_url
 
-        assert self.db is not None
-        return (
-            f"postgresql+asyncpg://{self.db.user}:"
-            f"{self.db.password.get_secret_value()}@"
-            f"{self.db.host}:"
-            f"{self.db.port}/"
-            f"{self.db.name}"
-        )
+        if self.db is not None:
+            return (
+                f"postgresql+asyncpg://{self.db.user}:"
+                f"{self.db.password.get_secret_value()}@"
+                f"{self.db.host}:"
+                f"{self.db.port}/"
+                f"{self.db.name}"
+            )
+        raise RuntimeError("Database URL is not Initialized")
 
     model_config = SettingsConfigDict(
         env_file=ROOT / ".env",
