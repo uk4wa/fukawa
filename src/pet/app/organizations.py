@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from pet.domain.uow import UnitOfWork
 from pet.domain.models import Organization
+from pet.domain.value_objects import Name as NameVO, PublicId as PublicIdVO
 from typing import Callable
 from uuid import UUID, uuid4
 
@@ -22,7 +23,10 @@ async def create_organization_cmd(
     uuid_gen: Callable[[], UUID] = uuid4,
 ) -> PublicId:
     public_id = uuid_gen()
-    domain_org = Organization.new(public_id=public_id, name=cmd.name)
+    domain_org = Organization.new(
+        public_id=PublicIdVO.new(public_id),
+        name=NameVO.new(cmd.name),
+    )
     uow.orgs.create(domain_org)
 
     return PublicId(public_id)

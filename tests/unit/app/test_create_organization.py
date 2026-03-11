@@ -19,7 +19,6 @@ async def test_create_organization_cmd_creates_domain_org_and_returns_public_id(
     cmd = CreateOrganizationCmdIn(name="Alice")
 
     uow = mocker.Mock()
-    uow.orgs.create = mocker.Mock()
 
     result = await create_organization_cmd(
         uow=uow,
@@ -31,6 +30,6 @@ async def test_create_organization_cmd_creates_domain_org_and_returns_public_id(
     (args,), _ = uow.orgs.create.call_args
 
     assert isinstance(args, OrganizationORM)
-    assert args.public_id == uuid
-    assert args.name == cmd.name
+    assert args.public_id.value == uuid
+    assert args.name.value == cmd.name
     assert result.val == uuid

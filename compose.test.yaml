@@ -1,0 +1,21 @@
+
+services:
+    test:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: test
+        environment:
+            APP_NAME: $APP_NAME
+            DB__HOST: db
+            DB__PORT: $DB__PORT
+            DB__NAME: $DB__NAME
+            DB__USER: $DB__USER
+            DB__PASSWORD: $DB__PASSWORD
+            DB_URL: $DB_URL
+        restart: no
+        depends_on:
+            db:
+                condition: service_healthy
+            migrate:
+                condition: service_completed_successfully

@@ -20,6 +20,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: migrate
     environment:
       APP_NAME: $APP_NAME
       DB__HOST: db
@@ -32,12 +33,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: ["uv", "run", "alembic", "upgrade", "head"]
 
   app:
     build: 
       context: .
       dockerfile: Dockerfile
+      target: runtime
     ports:
       - "8000:8000"
     environment:

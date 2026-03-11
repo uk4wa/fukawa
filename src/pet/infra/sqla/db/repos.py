@@ -14,6 +14,6 @@ class SQLAlchemyOrganizationsRepo:
     @staticmethod
     def _to_orm(domain: Domain) -> ORM:
         return ORM(
-            public_id=domain.public_id,
-            name=domain.name,
+            public_id=domain.public_id.value,
+            name=domain.name.value,
         )

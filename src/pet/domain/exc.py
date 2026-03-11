@@ -95,3 +95,13 @@ def translate_db_error(e: DBError) -> AppError:
                     "cause": e.cause,
                 },
             )
+
+
+@dataclass
+class ValidationError(Exception):
+    message: str
+
+
+@dataclass
+class NameValidationError(ValidationError):
+    pass
