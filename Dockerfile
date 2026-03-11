@@ -14,7 +14,7 @@ COPY alembic.ini .
 
 RUN uv sync --frozen
 
-ENV DEBUG=True \
+ENV DEBUG=False \
     APP_NAME=pet-uk4wa
 
 EXPOSE 8000
