@@ -43,7 +43,7 @@ class TimestampMixin:
     )
 
 
-class OrgRole(str, enum.Enum):
+class OrgRole(enum.StrEnum):
     owner = "owner"
     admin = "admin"
     member = "member"
@@ -140,7 +140,7 @@ class Project(Base, IdMixin, TimestampMixin):
     )
 
 
-class TaskStatus(str, enum.Enum):
+class TaskStatus(enum.StrEnum):
     todo = "todo"
     doing = "doing"
     done = "done"

@@ -21,6 +21,6 @@ class TransactionExecutor:
                 await uow.commit()
                 return result
             except DBError as e:
-                raise translate_db_error(e)
+                raise translate_db_error(e) from e
             except Exception:
                 raise

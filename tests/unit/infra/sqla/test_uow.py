@@ -42,7 +42,7 @@ async def test_uow_get_session(mocker: MockerFixture):
     expected_err = UoWNotInitializedError(field="session")
 
     with pytest.raises(UoWNotInitializedError) as e:
-        uow.session
+        _ = uow.session
 
     assert e.value.field == expected_err.field
 
@@ -62,7 +62,7 @@ async def test_uow_get_orgs(mocker: MockerFixture):
     expected_err = UoWNotInitializedError(field="orgs")
 
     with pytest.raises(UoWNotInitializedError) as e:
-        uow.orgs
+        _ = uow.orgs
 
     assert e.value.field == expected_err.field
 

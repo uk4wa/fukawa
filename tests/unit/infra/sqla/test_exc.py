@@ -2,7 +2,13 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 
-from pet.domain.exc import Conflict, DBError, DBErrorKind, InternalError, translate_db_error
+from pet.domain.exc import (
+    Conflict,
+    DBError,
+    DBErrorKind,
+    InternalError,
+    translate_db_error,
+)
 from pet.infra.sqla.db.exc import determine_exc, pg_sqlstate_from_integrity
 
 # determine_exc tests
@@ -37,7 +43,7 @@ def test_determine_exc_maps_integrity_sqlstate(
 
     assert result.kind == expected_kind
     assert result.title == "db_integrity"
-    assert result.retryable == False
+    assert not result.retryable
     assert result.sqlstate == sqlstate
     assert result.cause is error
 
@@ -53,7 +59,7 @@ def test_determine_exc_maps_operational_error(mocker: MockerFixture):
 
     assert result.kind == DBErrorKind.OPERATIONAL
     assert result.title == "db_unvailable"
-    assert result.retryable == True
+    assert result.retryable
     assert result.sqlstate is None
     assert result.cause is error
 

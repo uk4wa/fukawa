@@ -57,7 +57,7 @@ class SQLAlchemyUnitOfWork:
             await self.session.commit()
         except SQLAlchemyError as e:
             await self.session.rollback()
-            raise determine_exc(e=e)
+            raise determine_exc(e=e) from e
 
     async def rollback(self) -> None:
         await self.session.rollback()

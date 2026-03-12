@@ -50,7 +50,7 @@ class InternalError(AppError):
         )
 
 
-class DBErrorKind(str, enum.Enum):
+class DBErrorKind(enum.StrEnum):
     UNIQUE = "unique_violation"
     FK = "fk_violation"
     NOT_NULL = "not_null_violation"
