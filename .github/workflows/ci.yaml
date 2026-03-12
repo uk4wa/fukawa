@@ -1,0 +1,75 @@
+name: CI
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+        types:
+            - opened
+            - synchronize
+            - reopened
+            - closed
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+env:
+    PYTHON_VERSION: "3.13"
+
+jobs:
+    test:
+        name: Lint and Test
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+
+        services:
+            postgres:
+                image: postgres:18
+                env:
+                    POSTGRES_DB: app_test
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd="pg_isready -U postgres -d app_test"
+                    --health-interval=5s
+                    --health-timeout=3s
+                    --health-retries=10
+        env:
+            APP_CONFIG__DB__HOST: localhost
+            APP_CONFIG__DB__PORT: "5432"
+            APP_CONFIG__DB__NAME: app_test
+            APP_CONFIG__DB__USER: postgres
+            APP_CONFIG__DB__PASSWORD: postgres
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ env.PYTHON_VERSION }}
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v6
+
+            - name: Install dependencies
+              run: uv sync --frozen --dev
+
+            - name: Run linter
+              run: uv run ruff check .
+
+            - name: Run format check
+              run: run uv ruff format --check .
+
+            - name: Run tests
+              run: uv run pytest -q
