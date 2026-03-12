@@ -94,7 +94,7 @@ class Membership(Base, IdMixin, TimestampMixin):
         nullable=False,
     )
 
-    user_role: Mapped[str] = mapped_column(
+    user_role: Mapped[OrgRole] = mapped_column(
         sa.Enum(OrgRole, name="org_role"),
         nullable=False,
         server_default=sa.text("'member'"),
@@ -162,7 +162,7 @@ class Task(Base, IdMixin, TimestampMixin):
         nullable=True,
     )
 
-    status: Mapped[str] = mapped_column(
+    status: Mapped[TaskStatus] = mapped_column(
         sa.Enum(TaskStatus, name="task_status"),
         nullable=False,
         server_default=sa.text("'todo'"),
