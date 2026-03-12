@@ -11,7 +11,6 @@ on:
             - opened
             - synchronize
             - reopened
-            - closed
 
 permissions:
     contents: read
@@ -43,6 +42,7 @@ jobs:
                     --health-interval=5s
                     --health-timeout=3s
                     --health-retries=10
+
         env:
             APP_CONFIG__DB__HOST: localhost
             APP_CONFIG__DB__PORT: "5432"
