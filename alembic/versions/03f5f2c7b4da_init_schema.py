@@ -24,9 +24,7 @@ def upgrade() -> None:
     op.create_table(
         "organizations",
         sa.Column("name", sa.String(length=320), nullable=False),
-        sa.Column(
-            "id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False
-        ),
+        sa.Column("id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False),
         sa.Column(
             "public_id",
             sa.Uuid(),
@@ -53,9 +51,7 @@ def upgrade() -> None:
         "users",
         sa.Column("first_name", sa.String(length=128), nullable=False),
         sa.Column("last_name", sa.String(length=128), nullable=False),
-        sa.Column(
-            "id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False
-        ),
+        sa.Column("id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False),
         sa.Column(
             "public_id",
             sa.Uuid(),
@@ -87,9 +83,7 @@ def upgrade() -> None:
             server_default=sa.text("'member'"),
             nullable=False,
         ),
-        sa.Column(
-            "id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False
-        ),
+        sa.Column("id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False),
         sa.Column(
             "public_id",
             sa.Uuid(),
@@ -129,9 +123,7 @@ def upgrade() -> None:
         "projects",
         sa.Column("name", sa.String(length=320), nullable=False),
         sa.Column("org_id", sa.BigInteger(), nullable=False),
-        sa.Column(
-            "id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False
-        ),
+        sa.Column("id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False),
         sa.Column(
             "public_id",
             sa.Uuid(),
@@ -171,9 +163,7 @@ def upgrade() -> None:
             server_default=sa.text("'todo'"),
             nullable=False,
         ),
-        sa.Column(
-            "id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False
-        ),
+        sa.Column("id", sa.BigInteger(), sa.Identity(always=False, start=1), nullable=False),
         sa.Column(
             "public_id",
             sa.Uuid(),
@@ -207,9 +197,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_tasks")),
         sa.UniqueConstraint("public_id", name=op.f("uq_tasks_public_id")),
     )
-    op.create_index(
-        "ix_tasks_assignee_user_id", "tasks", ["assignee_user_id"], unique=False
-    )
+    op.create_index("ix_tasks_assignee_user_id", "tasks", ["assignee_user_id"], unique=False)
     op.create_index("ix_tasks_project_id", "tasks", ["project_id"], unique=False)
     op.create_index("ix_tasks_status", "tasks", ["status"], unique=False)
     # ### end Alembic commands ###

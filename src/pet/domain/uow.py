@@ -6,7 +6,6 @@ from pet.domain.repos import OrganizationsRepo
 
 
 class UnitOfWork(Protocol):
-
     @property
     def orgs(self) -> OrganizationsRepo: ...
 

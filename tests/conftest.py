@@ -74,9 +74,7 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def db_session(
-    app: FastAPI, test_settings: Settings
-) -> AsyncIterator[AsyncSession]:
+async def db_session(app: FastAPI, test_settings: Settings) -> AsyncIterator[AsyncSession]:
     async with app.state.session_factory() as session:
         yield session
 

@@ -5,9 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.mark.asyncio
-async def test_api_organizations_create_success(
-    client: AsyncClient, db_session: AsyncSession
-):
+async def test_api_organizations_create_success(client: AsyncClient, db_session: AsyncSession):
     name_json = {"name": "okname1"}
     response = await client.post("/orgs/", json=name_json)
 

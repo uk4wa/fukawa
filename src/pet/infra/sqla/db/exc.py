@@ -12,7 +12,6 @@ def pg_sqlstate_from_integrity(err: Exception) -> str | None:
 def determine_exc(e: SQLAlchemyError) -> DBError:
 
     if isinstance(e, IntegrityError):
-
         kind_map: dict[str, DBErrorKind] = {
             "23505": DBErrorKind.UNIQUE,
             "23503": DBErrorKind.FK,

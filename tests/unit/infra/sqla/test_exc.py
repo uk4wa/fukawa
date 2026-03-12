@@ -31,7 +31,9 @@ def test_determine_exc_maps_integrity_sqlstate(
     expected_kind: DBErrorKind,
 ):
     error = IntegrityError(
-        statement="statement", params={"name": "acme"}, orig=Exception()
+        statement="statement",
+        params={"name": "acme"},
+        orig=Exception(),
     )
 
     pg_sqlstate_mock = mocker.patch(
@@ -51,9 +53,7 @@ def test_determine_exc_maps_integrity_sqlstate(
 
 
 def test_determine_exc_maps_operational_error(mocker: MockerFixture):
-    error = OperationalError(
-        statement="statement", params={"name": "acme"}, orig=Exception()
-    )
+    error = OperationalError(statement="statement", params={"name": "acme"}, orig=Exception())
 
     result = determine_exc(error)
 
