@@ -130,6 +130,10 @@ class Project(Base, IdMixin, TimestampMixin):
 
     __table_args__ = (
         sa.UniqueConstraint("org_id", "name", name="uq_projects_org_name"),
+        sa.CheckConstraint(
+            "char_length(trim(name)) >= 3",
+            name="ck_projects_name_min_len",
+        ),
         # sa.Index("ix_projects_org_id", "org_id"),
     )
 

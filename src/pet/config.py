@@ -1,8 +1,9 @@
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from pathlib import Path
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy import URL
 
 ROOT = Path(__file__).resolve().parents[2]
 APP_NAME = "pet-uk4wa"
@@ -31,24 +32,26 @@ class Settings(BaseSettings):
     debug: bool = False
     app_name: str = APP_NAME
 
-    db_url: str | None = None
+    db_url: PostgresDsn | None = None
     db: DatabaseSettings | None = None
     engine: EngineSettings = Field(default_factory=EngineSettings)
     session_maker: SessionMakerSettings = Field(default_factory=SessionMakerSettings)
 
-    @property
+    @cached_property
     def dsn(self) -> str:
         if self.db_url is not None:
-            return self.db_url
+            return str(self.db_url)
 
         if self.db is not None:
-            return (
-                f"postgresql+asyncpg://{self.db.user}:"
-                f"{self.db.password.get_secret_value()}@"
-                f"{self.db.host}:"
-                f"{self.db.port}/"
-                f"{self.db.name}"
-            )
+            return URL.create(
+                drivername="postgresql+asyncpg",
+                username=self.db.user,
+                password=self.db.password.get_secret_value(),
+                host=self.db.host,
+                port=self.db.port,
+                database=self.db.name,
+            ).render_as_string(hide_password=False)
+
         raise RuntimeError("Database URL is not Initialized")
 
     model_config = SettingsConfigDict(
