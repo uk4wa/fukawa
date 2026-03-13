@@ -26,7 +26,7 @@ async def create_organization_cmd(
     public_id = uuid_gen()
     domain_org = Organization.new(
         public_id=PublicIdVO.new(public_id),
-        name=NameVO.new(cmd.name),
+        name=NameVO.create(cmd.name),
     )
     uow.orgs.create(domain_org)
 
