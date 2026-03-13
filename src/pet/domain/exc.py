@@ -98,7 +98,7 @@ def translate_db_error(e: DBError) -> AppError:
 
 
 @dataclass
-class ValidationError(Exception):
+class ValidationError(ValueError):
     message: str
 
 
