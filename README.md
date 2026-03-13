@@ -1,3 +1,4 @@
 # launch
-1. cd /pet
-2. docker compose up -d --build
+- docker compose up -d --build
+# run tests
+- uv run pytest
