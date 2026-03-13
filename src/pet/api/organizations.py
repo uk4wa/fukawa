@@ -14,7 +14,7 @@ Executor = Annotated[TransactionExecutor, Depends(get_executor)]
 
 
 class CreateOrgDtoIn(BaseModel):
-    name: str = Field(..., max_length=320)
+    name: str = Field(..., min_length=3, max_length=320)
 
 
 class PublicId(BaseModel):
