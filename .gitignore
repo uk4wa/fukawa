@@ -10,7 +10,6 @@ wheels/
 .env
 
 .vscode
-p.py
 .pytest_cache/
 htmlcov/
 .coverage
