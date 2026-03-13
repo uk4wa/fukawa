@@ -13,9 +13,9 @@ from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from testcontainers.postgres import PostgresContainer  # type: ignore
 
+from pet.app.transaction_executor import TransactionExecutor
 from pet.config import Settings
 from pet.domain.uow import UnitOfWork
-from pet.infra.transaction_executor import TransactionExecutor
 from pet.main import create_app
 
 ROOT = Path(__file__).resolve().parents[2]

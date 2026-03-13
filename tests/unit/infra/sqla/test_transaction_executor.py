@@ -3,7 +3,7 @@ from unittest.mock import ANY, AsyncMock, Mock
 import pytest
 from pytest_mock import MockerFixture
 
-from pet.infra.transaction_executor import TransactionExecutor
+from pet.app.transaction_executor import TransactionExecutor
 
 
 @pytest.mark.asyncio
@@ -38,10 +38,10 @@ async def test_transaction_executor_failed_raised_db_exception(
     class TranslatedError(Exception):
         pass
 
-    mocker.patch("pet.infra.transaction_executor.DBError", FakeDBError)
+    mocker.patch("pet.app.transaction_executor.DBError", FakeDBError)
     translated_exc = TranslatedError("translated_exc")
     translated_db_error = mocker.patch(
-        "pet.infra.transaction_executor.translate_db_error",
+        "pet.app.transaction_executor.translate_db_error",
         return_value=translated_exc,
         autospec=True,
     )
@@ -74,7 +74,7 @@ async def test_transaction_executor_failed_raise_any_exception(
 ) -> None:
     handler = mocker.AsyncMock(side_effect=exception, spec=True)
     translate_db_error = mocker.patch(
-        "pet.infra.transaction_executor.translate_db_error",
+        "pet.app.transaction_executor.translate_db_error",
         autospec=True,
     )
 
