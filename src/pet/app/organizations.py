@@ -2,6 +2,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
+import structlog
+
 from pet.domain.models import Organization
 from pet.domain.uow import UnitOfWork
 from pet.domain.value_objects import Name as NameVO
@@ -16,6 +18,9 @@ class CreateOrganizationCmdIn:
 @dataclass
 class PublicId:
     val: UUID
+
+
+logger = structlog.get_logger(__name__)
 
 
 async def create_organization_cmd(
