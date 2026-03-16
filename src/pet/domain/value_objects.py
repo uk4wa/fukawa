@@ -35,10 +35,8 @@ class Name:
 
         if not normalized_value:
             raise NameValidationError("Name cannot be empty")
-
         if len(normalized_value) <= 3 or len(normalized_value) >= 320:
             raise NameValidationError("Name is too long")
-
         if any(ch in INVALID_CHARS for ch in normalized_value):
             raise NameValidationError("Name contains invalid characters")
 

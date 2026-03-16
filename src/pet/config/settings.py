@@ -1,7 +1,7 @@
 from functools import cached_property, lru_cache
 from pathlib import Path
 
-from pydantic import BaseModel, Field, PostgresDsn, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -10,6 +10,7 @@ APP_NAME = "pet-uk4wa"
 
 
 class DatabaseSettings(BaseModel):
+    driver: str
     host: str
     name: str
     user: str
@@ -32,27 +33,20 @@ class Settings(BaseSettings):
     debug: bool = False
     app_name: str = APP_NAME
 
-    db_url: PostgresDsn | None = None
-    db: DatabaseSettings | None = None
+    db: DatabaseSettings
     engine: EngineSettings = Field(default_factory=EngineSettings)
     session_maker: SessionMakerSettings = Field(default_factory=SessionMakerSettings)
 
     @cached_property
     def dsn(self) -> str:
-        if self.db_url is not None:
-            return str(self.db_url)
-
-        if self.db is not None:
-            return URL.create(
-                drivername="postgresql+asyncpg",
-                username=self.db.user,
-                password=self.db.password.get_secret_value(),
-                host=self.db.host,
-                port=self.db.port,
-                database=self.db.name,
-            ).render_as_string(hide_password=False)
-
-        raise RuntimeError("Database URL is not Initialized")
+        return URL.create(
+            drivername=self.db.driver,
+            username=self.db.user,
+            password=self.db.password.get_secret_value(),
+            host=self.db.host,
+            port=self.db.port,
+            database=self.db.name,
+        ).render_as_string(hide_password=False)
 
     model_config = SettingsConfigDict(
         env_file=ROOT / ".env",
