@@ -82,7 +82,7 @@ class Organization(Base, IdMixin, TimestampMixin):
     __table_args__ = (
         sa.CheckConstraint(
             f"char_length(trim(name)) >= {ORG_NAME_MIN_LEN}",
-            name="ck_projects_name_min_len",
+            name="ck_organizations_name_min_len",
         ),
     )
 

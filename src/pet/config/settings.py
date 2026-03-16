@@ -39,8 +39,6 @@ class SessionMakerSettings(BaseModel):
 
 
 class Settings(BaseSettings):
-    log_level: str
-    log_format: LogFormat = "json"
     app_name: str = _APP_NAME
 
     db: DatabaseSettings
