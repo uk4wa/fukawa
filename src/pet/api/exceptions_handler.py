@@ -1,4 +1,3 @@
-import logging
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -10,15 +9,26 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
+from pet.config.logging import get_logger
 from pet.domain.exc import AppError, DBError
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 
-logger = logging.getLogger("app.errors")
+logger = get_logger("app.errors")
 
 
 def _request_id(r: Request) -> str | None:
     return getattr(r.state, "request_id", None) or r.headers.get("x-request-id")
+
+
+def _headers_with_request_id(
+    request_id: str | None,
+    headers: dict[str, str] | None = None,
+) -> dict[str, str] | None:
+    resolved = dict(headers or {})
+    if request_id is not None:
+        resolved["X-Request-ID"] = request_id
+    return resolved or None
 
 
 def problem(
@@ -64,6 +74,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             instance=(r.url.path),
             code=exc.code,
             request_id=rid,
+            headers=_headers_with_request_id(rid),
         )
 
     @app.exception_handler(DBError)
@@ -76,6 +87,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             code=exc.kind,
             instance=str(request.url.path),
             request_id=rid,
+            headers=_headers_with_request_id(rid),
         )
 
     @app.exception_handler(StarletteHTTPException)
@@ -91,7 +103,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             instance=(r.url.path),
             code="http_error",
             request_id=rid,
-            headers=dict(exc.headers or {}),
+            headers=_headers_with_request_id(rid, dict(exc.headers or {})),
         )
 
     @app.exception_handler(RequestValidationError)
@@ -108,6 +120,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             errors=exc.errors(),
             instance=str(request.url.path),
             request_id=rid,
+            headers=_headers_with_request_id(rid),
         )
 
     @app.exception_handler(Exception)
@@ -121,4 +134,5 @@ def register_exception_handlers(app: FastAPI) -> None:
             code="internal_error",
             instance=str(request.url.path),
             request_id=rid,
+            headers=_headers_with_request_id(rid),
         )

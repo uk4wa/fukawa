@@ -20,6 +20,11 @@ def create_engine(
     )
 
 
+async def ping_engine(engine: AsyncEngine) -> None:
+    async with engine.connect() as connection:
+        await connection.exec_driver_sql("SELECT 1")
+
+
 def create_session_maker(
     bind: AsyncEngine,
     expire_on_commit: bool = False,

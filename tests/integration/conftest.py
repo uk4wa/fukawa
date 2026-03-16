@@ -34,7 +34,7 @@ def test_settings(
     migrated_postgres_db: None,
 ) -> Settings:
     return Settings(
-        debug=False,
+        log_level="DEBUG",
         app_name="pet-uk4wa",
         db=DatabaseSettings(
             driver="postgresql+asyncpg",
@@ -47,14 +47,14 @@ def test_settings(
     )
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="function")
 async def app(test_settings: Settings) -> AsyncIterator[FastAPI]:
     app_instance = create_app(settings=test_settings)
     async with LifespanManager(app_instance):
         yield app_instance
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="function")
 async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(
         transport=ASGITransport(app=app, raise_app_exceptions=False),
@@ -63,7 +63,7 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
         yield http_client
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="function")
 async def db_session(app: FastAPI) -> AsyncIterator[AsyncSession]:
     async with app.state.session_factory() as session:
         yield session
