@@ -1,7 +1,19 @@
-from pet.config.settings import Settings
+from pydantic import SecretStr
+
+from pet.config.settings import DatabaseSettings, Settings
 
 
-def test_settings_treats_empty_db_url_as_none() -> None:
-    settings = Settings(log_level="INFO", db_url="")
+def test_settings_normalizes_log_level() -> None:
+    settings = Settings(
+        log_level=" info ",
+        db=DatabaseSettings(
+            driver="postgresql+asyncpg",
+            host="localhost",
+            name="pet",
+            user="user",
+            port=5432,
+            password=SecretStr("pass"),
+        ),
+    )
 
-    assert settings.db_url is None
+    assert settings.log_level == "INFO"
