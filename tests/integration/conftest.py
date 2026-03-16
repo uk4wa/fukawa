@@ -34,7 +34,6 @@ def test_settings(
     migrated_postgres_db: None,
 ) -> Settings:
     return Settings(
-        debug=False,
         app_name="pet-uk4wa",
         db=DatabaseSettings(
             driver="postgresql+asyncpg",
