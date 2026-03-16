@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from pet.app.organizations import CreateOrganizationCmdIn, create_organization_cmd
 from pet.di.db import get_executor
 from pet.domain.uow import TransactionExecutor
+from pet.domain.value_objects import ORG_NAME_MAX_LEN, ORG_NAME_MIN_LEN
 
 organizationsAPI = APIRouter(prefix="/orgs")
 
@@ -14,7 +15,7 @@ Executor = Annotated[TransactionExecutor, Depends(get_executor)]
 
 
 class CreateOrgDtoIn(BaseModel):
-    name: str = Field(..., min_length=3, max_length=320)
+    name: str = Field(..., min_length=ORG_NAME_MIN_LEN, max_length=ORG_NAME_MAX_LEN)
 
 
 class PublicId(BaseModel):

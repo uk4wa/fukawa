@@ -4,6 +4,8 @@ from uuid import UUID
 from pet.domain.exc import NameValidationError
 
 INVALID_CHARS: frozenset[str] = frozenset("\\#@`~*^%'\";:.,?!")
+ORG_NAME_MIN_LEN: int = 3
+ORG_NAME_MAX_LEN: int = 64
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,7 +37,7 @@ class Name:
 
         if not normalized_value:
             raise NameValidationError("Name cannot be empty")
-        if len(normalized_value) <= 3 or len(normalized_value) >= 320:
+        if len(normalized_value) < ORG_NAME_MIN_LEN or len(normalized_value) > ORG_NAME_MAX_LEN:
             raise NameValidationError("Name is too long")
         if any(ch in INVALID_CHARS for ch in normalized_value):
             raise NameValidationError("Name contains invalid characters")

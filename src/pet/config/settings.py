@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
 ROOT = Path(__file__).resolve().parents[2]
-APP_NAME = "pet-uk4wa"
+_APP_NAME = "pet-uk4wa"
 
 
 class DatabaseSettings(BaseModel):
@@ -30,8 +30,7 @@ class SessionMakerSettings(BaseModel):
 
 
 class Settings(BaseSettings):
-    debug: bool = False
-    app_name: str = APP_NAME
+    app_name: str = _APP_NAME
 
     db: DatabaseSettings
     engine: EngineSettings = Field(default_factory=EngineSettings)
