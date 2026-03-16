@@ -28,6 +28,7 @@ services:
       DB__NAME: $DB__NAME
       DB__USER: $DB__USER
       DB__PASSWORD: $DB__PASSWORD
+      DB_URL: $DB_URL
     restart: no
     depends_on:
       db:
@@ -47,6 +48,7 @@ services:
       DB__NAME: $DB__NAME
       DB__USER: $DB__USER
       DB__PASSWORD: $DB__PASSWORD
+      DB_URL: $DB_URL
     restart: unless-stopped
     depends_on:
       db:
