@@ -47,13 +47,6 @@ class Settings(BaseSettings):
     engine: EngineSettings = Field(default_factory=EngineSettings)
     session_maker: SessionMakerSettings = Field(default_factory=SessionMakerSettings)
 
-    @field_validator("db_url", mode="before")
-    @classmethod
-    def normalize_db_url(cls, v: object) -> object:
-        if isinstance(v, str) and not v.strip():
-            return None
-        return v
-
     @field_validator("log_level")
     @classmethod
     def validator_log_level(cls, v: str) -> str:
