@@ -11,7 +11,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from pet.domain.value_objects import ORG_NAME_MAX_LEN, ORG_NAME_MIN_LEN
 from pet.infra.sqla.db.base import Base
 
 
@@ -71,7 +70,7 @@ class User(Base, IdMixin, TimestampMixin):
 class Organization(Base, IdMixin, TimestampMixin):
     __tablename__ = "organizations"
 
-    name: Mapped[str] = mapped_column(String(ORG_NAME_MAX_LEN), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
 
     members: Mapped[list["Membership"]] = relationship(
         back_populates="org",
@@ -138,6 +137,10 @@ class Project(Base, IdMixin, TimestampMixin):
 
     __table_args__ = (
         sa.UniqueConstraint("org_id", "name", name="uq_projects_org_name"),
+        sa.CheckConstraint(
+            "char_length(trim(name)) >= 3",
+            name="ck_projects_name_min_len",
+        ),
         # sa.Index("ix_projects_org_id", "org_id"),
     )
 
