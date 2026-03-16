@@ -4,8 +4,6 @@ from uuid import UUID
 from pet.domain.exc import NameValidationError
 
 INVALID_CHARS: frozenset[str] = frozenset("\\#@`~*^%'\";:.,?!")
-ORG_NAME_MIN_LEN = 3
-ORG_NAME_MAX_LEN = 320
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,11 +16,11 @@ class PublicId:
 
 
 @dataclass(frozen=True, slots=True)
-class OrgName:
+class Name:
     value: str
 
     @classmethod
-    def create(cls, value: str) -> "OrgName":
+    def create(cls, value: str) -> "Name":
         """
         DDD alias for Name()
         """
@@ -37,7 +35,7 @@ class OrgName:
 
         if not normalized_value:
             raise NameValidationError("Name cannot be empty")
-        if len(normalized_value) < ORG_NAME_MIN_LEN or len(normalized_value) > ORG_NAME_MAX_LEN:
+        if len(normalized_value) <= 3 or len(normalized_value) >= 320:
             raise NameValidationError("Name is too long")
         if any(ch in INVALID_CHARS for ch in normalized_value):
             raise NameValidationError("Name contains invalid characters")
@@ -45,7 +43,7 @@ class OrgName:
         object.__setattr__(self, "value", normalized_value)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, OrgName):
+        if not isinstance(other, Name):
             return NotImplemented
         return other.canonical == self.canonical
 
