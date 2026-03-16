@@ -6,7 +6,7 @@ import structlog
 
 from pet.domain.models import Organization
 from pet.domain.uow import UnitOfWork
-from pet.domain.value_objects import Name as NameVO
+from pet.domain.value_objects import OrgName as NameVO
 from pet.domain.value_objects import PublicId as PublicIdVO
 
 
