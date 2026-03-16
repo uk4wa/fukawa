@@ -3,6 +3,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
+from dotenv import load_dotenv
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -35,18 +36,21 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+load_dotenv()
+
 
 def get_database_url() -> str:
     url = config.get_main_option("sqlalchemy.url")
     if url:
         return url
+
     driver = os.getenv("DB__DRIVER")
     user = os.getenv("DB__USER")
     password = os.getenv("DB__PASSWORD")
     port = os.getenv("DB__PORT")
     host = os.getenv("DB__HOST")
     name = os.getenv("DB__NAME")
-    print(f"\n\n\n{driver} and {user} and {password} and {host} and {port} {name}\n\n\n")
+
     if driver and user and password and host and port and name:
         return f"{driver}://{user}:{password}@{host}:{port}/{name}"
 
