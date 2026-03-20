@@ -1,10 +1,11 @@
 import asyncio
 import os
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
 from dotenv import load_dotenv
-from sqlalchemy import pool
+from sqlalchemy import URL, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
@@ -36,7 +37,8 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-load_dotenv()
+ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / ".env")
 
 
 def get_database_url() -> str:
@@ -52,7 +54,14 @@ def get_database_url() -> str:
     name = os.getenv("DB__NAME")
 
     if driver and user and password and host and port and name:
-        return f"{driver}://{user}:{password}@{host}:{port}/{name}"
+        return URL.create(
+            drivername=driver,
+            username=user,
+            password=password,
+            host=host,
+            port=int(port),
+            database=name,
+        ).render_as_string(hide_password=False)
 
     raise RuntimeError("Database URL is not configured for Alembic")
 

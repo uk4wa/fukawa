@@ -9,7 +9,7 @@ from pet.di.db import get_executor
 from pet.domain.uow import TransactionExecutor
 from pet.domain.value_objects import ORG_NAME_MAX_LEN, ORG_NAME_MIN_LEN
 
-organizationsAPI = APIRouter(prefix="/orgs")
+organizations = APIRouter(prefix="/orgs")
 
 Executor = Annotated[TransactionExecutor, Depends(get_executor)]
 
@@ -22,7 +22,7 @@ class PublicId(BaseModel):
     public_id: UUID
 
 
-@organizationsAPI.post(
+@organizations.post(
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=PublicId,

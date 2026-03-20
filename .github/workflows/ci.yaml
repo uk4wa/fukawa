@@ -27,6 +27,27 @@ jobs:
         name: Lint and Test
         runs-on: ubuntu-latest
         timeout-minutes: 15
+        services:
+            postgres:
+                image: postgres:18
+                env:
+                    POSTGRES_DB: pet_ci
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U postgres -d pet_ci"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+        env:
+            DB__DRIVER: postgresql+asyncpg
+            DB__HOST: 127.0.0.1
+            DB__PORT: "5432"
+            DB__NAME: pet_ci
+            DB__USER: postgres
+            DB__PASSWORD: postgres
 
         steps:
             - name: Checkout repository
@@ -52,12 +73,69 @@ jobs:
             - name: Run format check
               run: uv run ruff format --check .
 
-            - name: Run tests
-              run: uv run pytest -q
+            - name: Apply migrations
+              run: uv run alembic upgrade head
 
-            - name: Upload test result
+            - name: Check schema drift
+              run: uv run alembic check
+
+            - name: Run tests
+              run: uv run pytest -q --junitxml=pytest-report.xml
+
+            - name: Upload test report
               if: always()
               uses: actions/upload-artifact@v6
               with:
-                  name: test-results
-                  path: pytes-report.xml
+                  name: pytest-report
+                  path: pytest-report.xml
+
+            - name: Upload coverage HTML
+              if: always()
+              uses: actions/upload-artifact@v6
+              with:
+                  name: coverage-html
+                  path: htmlcov/
+
+    docker-compose:
+        name: Docker Compose Smoke Test
+        needs: test
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        env:
+            APP_NAME: pet-uk4wa
+            DB__DRIVER: postgresql+asyncpg
+            DB__PORT: "5432"
+            DB__NAME: pet_compose_ci
+            DB__USER: postgres
+            DB__PASSWORD: postgres
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Validate Compose config
+              run: docker compose config
+
+            - name: Up Docker Compose
+              run: docker compose up -d --build --wait --wait-timeout 120
+
+            - name: Show Compose status
+              run: docker compose ps
+
+            - name: Smoke check application
+              run: curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-connrefused --retry-all-errors http://127.0.0.1:8000/openapi.json
+
+            - name: Capture Compose logs
+              if: always()
+              run: docker compose logs --no-color > compose.log
+
+            - name: Upload Compose logs
+              if: always()
+              uses: actions/upload-artifact@v6
+              with:
+                  name: compose-logs
+                  path: compose.log
+
+            - name: Shutdown
+              if: always()
+              run: docker compose down -v
