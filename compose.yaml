@@ -1,4 +1,4 @@
-name: pet-uk4wa
+name: ${APP_NAME}
 
 services:
   db:
@@ -50,6 +50,18 @@ services:
       DB__USER: $DB__USER
       DB__PASSWORD: $DB__PASSWORD
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
     depends_on:
       db:
         condition: service_healthy
