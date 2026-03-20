@@ -24,6 +24,7 @@ services:
     environment:
       APP_NAME: $APP_NAME
       DB__HOST: db
+      DB__DRIVER: $DB__DRIVER
       DB__PORT: $DB__PORT
       DB__NAME: $DB__NAME
       DB__USER: $DB__USER
@@ -43,6 +44,7 @@ services:
     environment:
       APP_NAME: $APP_NAME
       DB__HOST: db
+      DB__DRIVER: $DB__DRIVER
       DB__PORT: $DB__PORT
       DB__NAME: $DB__NAME
       DB__USER: $DB__USER
@@ -54,6 +56,5 @@ services:
       migrate:
         condition: service_completed_successfully
 
-      
 volumes:
   pgdata:
