@@ -18,6 +18,7 @@ def build_lifespan(settings: Settings):
             echo=settings.engine.echo,
             pool_size=settings.engine.pool_size,
             max_overflow=settings.engine.max_overflow,
+            pool_pre_ping=settings.engine.pool_pre_ping,
         )
         session_factory = create_session_maker(
             bind=engine,

@@ -22,9 +22,9 @@ ENV DEBUG=False \
 EXPOSE 8000
 
 CMD ["uv", "run", "--no-sync", "uvicorn" \
+    ,"--factory", "pet.main:create_app" \
     ,"--port", "8000" \
-    ,"--host", "0.0.0.0" \
-    ,"pet.main:create_app"]
+    ,"--host", "0.0.0.0"]
 
 FROM base AS migrate-deps
 

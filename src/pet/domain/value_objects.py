@@ -13,7 +13,7 @@ class PublicId:
     value: UUID
 
     @classmethod
-    def new(cls, value: UUID) -> "PublicId":
+    def create(cls, value: UUID) -> "PublicId":
         return cls(value=value)
 
 
