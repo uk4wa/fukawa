@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pet.domain.value_objects import Name, PublicId
 
@@ -6,7 +6,7 @@ from pet.domain.value_objects import Name, PublicId
 @dataclass(slots=True, frozen=True)
 class Organization:
     public_id: PublicId
-    name: Name
+    name: Name = field(compare=False)
 
     @classmethod
     def new(

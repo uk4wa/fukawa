@@ -34,10 +34,11 @@ class Name:
 
     def __post_init__(self) -> None:
         normalized_value = self.value.strip()
+        canonical_value = normalized_value.casefold()
 
         if not normalized_value:
             raise NameValidationError("Name cannot be empty")
-        if len(normalized_value) < ORG_NAME_MIN_LEN or len(normalized_value) > ORG_NAME_MAX_LEN:
+        if len(normalized_value) < ORG_NAME_MIN_LEN or len(canonical_value) > ORG_NAME_MAX_LEN:
             raise NameValidationError("Name is too long")
         if any(ch in INVALID_CHARS for ch in normalized_value):
             raise NameValidationError("Name contains invalid characters")
