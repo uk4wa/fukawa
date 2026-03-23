@@ -71,7 +71,8 @@ class User(Base, IdMixin, TimestampMixin):
 class Organization(Base, IdMixin, TimestampMixin):
     __tablename__ = "organizations"
 
-    name: Mapped[str] = mapped_column(String(ORG_NAME_MAX_LEN), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(ORG_NAME_MAX_LEN), nullable=False)
+    name_canonical: Mapped[str] = mapped_column(String(ORG_NAME_MAX_LEN), nullable=False)
 
     members: Mapped[list["Membership"]] = relationship(
         back_populates="org",
@@ -80,6 +81,7 @@ class Organization(Base, IdMixin, TimestampMixin):
     )
 
     __table_args__ = (
+        sa.UniqueConstraint("name_canonical", name="uq_organizations_name_canonical"),
         sa.CheckConstraint(
             f"char_length(trim(name)) >= {ORG_NAME_MIN_LEN}",
             name="ck_organizations_name_min_len",
