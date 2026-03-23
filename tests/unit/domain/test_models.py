@@ -5,13 +5,13 @@ from pet.domain.value_objects import Name, PublicId
 
 
 def test_organization_identity_is_based_on_public_id() -> None:
-    public_id = PublicId.new(UUID("11111111-1111-1111-1111-111111111111"))
+    public_id = PublicId.create(UUID("11111111-1111-1111-1111-111111111111"))
 
-    left = Organization.new(
+    left = Organization.create(
         public_id=public_id,
         name=Name.create("Acme"),
     )
-    right = Organization.new(
+    right = Organization.create(
         public_id=public_id,
         name=Name.create("Another legal name"),
     )

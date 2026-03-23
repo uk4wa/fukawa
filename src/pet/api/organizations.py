@@ -27,7 +27,7 @@ class PublicId(BaseModel):
     status_code=status.HTTP_201_CREATED,
     response_model=PublicId,
 )
-async def create_organization_v2(
+async def create_organization(
     org: CreateOrgDtoIn,
     executor: Executor,
 ):

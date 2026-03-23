@@ -22,5 +22,3 @@ class TransactionExecutor:
                 return result
             except DBError as e:
                 raise translate_db_error(e) from e
-            except Exception:
-                raise

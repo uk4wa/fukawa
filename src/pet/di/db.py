@@ -9,14 +9,6 @@ from pet.infra.sqla.db.repos import SQLAlchemyOrganizationsRepo
 from pet.infra.sqla.uow import SQLAlchemyUnitOfWork
 
 
-def get_uow(r: Request) -> UnitOfWork:
-    sf = r.app.state.session_factory
-    return SQLAlchemyUnitOfWork(
-        session_factory=sf,
-        orgs_repo_factory=SQLAlchemyOrganizationsRepo,
-    )
-
-
 def get_uow_factory(r: Request) -> Callable[[], UnitOfWork]:
     sf = r.app.state.session_factory
 

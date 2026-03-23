@@ -9,7 +9,7 @@ class Organization:
     name: Name = field(compare=False)
 
     @classmethod
-    def new(
+    def create(
         cls,
         public_id: PublicId,
         name: Name,
