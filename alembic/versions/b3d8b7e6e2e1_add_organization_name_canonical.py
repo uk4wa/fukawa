@@ -24,23 +24,15 @@ def upgrade() -> None:
         "organizations",
         sa.Column("name_canonical", sa.String(length=64), nullable=True),
     )
-
-    organizations = sa.table(
-        "organizations",
-        sa.column("id", sa.BigInteger()),
-        sa.column("name", sa.String(length=64)),
-        sa.column("name_canonical", sa.String(length=64)),
-    )
-
-    bind = op.get_bind()
-    rows = bind.execute(sa.select(organizations.c.id, organizations.c.name)).mappings()
-
-    for row in rows:
-        bind.execute(
-            organizations.update()
-            .where(organizations.c.id == row["id"])
-            .values(name_canonical=row["name"].casefold())
+    op.execute(
+        sa.text(
+            """
+            UPDATE organizations
+            SET name_canonical = casefold(name)
+            WHERE name_canonical IS NULL
+            """
         )
+    )
 
     op.alter_column(
         "organizations",
