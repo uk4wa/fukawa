@@ -17,8 +17,6 @@ from pet.infra.sqla.db.exc import (
     pg_sqlstate_from_integrity,
 )
 
-# determine_exc tests
-
 
 @pytest.mark.parametrize(
     ("sqlstate", "expected_kind"),
