@@ -63,7 +63,7 @@ def test_determine_exc_maps_operational_error(mocker: MockerFixture):
     result = determine_exc(error)
 
     assert result.kind == DBErrorKind.OPERATIONAL
-    assert result.title == "db_unvailable"
+    assert result.title == "db_unavailable"
     assert result.retryable
     assert result.sqlstate is None
     assert result.cause is error
