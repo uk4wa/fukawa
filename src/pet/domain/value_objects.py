@@ -38,9 +38,9 @@ class Name:
 
         if not normalized_value:
             raise NameValidationError("Name cannot be empty")
-        if len(canonical_value) < ORG_NAME_MIN_LEN:
+        if len(normalized_value) < ORG_NAME_MIN_LEN:
             raise NameValidationError("Name is too short")
-        if len(normalized_value) > ORG_NAME_MAX_LEN:
+        if len(canonical_value) > ORG_NAME_MAX_LEN:
             raise NameValidationError("Name is too long")
         if any(ch in INVALID_CHARS for ch in normalized_value):
             raise NameValidationError("Name contains invalid characters")
