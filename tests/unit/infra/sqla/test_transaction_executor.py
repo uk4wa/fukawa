@@ -64,7 +64,7 @@ async def test_transaction_executor_failed_raised_db_exception(
 @pytest.mark.asyncio
 async def test_transaction_executor_failed_raises_translated_validation_exception(
     uow_mock: AsyncMock,
-    uow_factory: Mock,
+    uow_factory_mock: Mock,
     mocker: MockerFixture,
     executor: TransactionExecutor,
 ) -> None:
@@ -84,7 +84,7 @@ async def test_transaction_executor_failed_raises_translated_validation_exceptio
         await executor.run(handler, 1)
 
     assert exc_info.value is translated_exc
-    uow_factory.assert_called_once_with()
+    uow_factory_mock.assert_called_once_with()
     handler.assert_awaited_once_with(uow_mock, 1)
     uow_mock.commit.assert_not_awaited()
     translate_validation_error.assert_called_once_with(validation_error)
