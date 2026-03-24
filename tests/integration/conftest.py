@@ -23,7 +23,9 @@ def postgres_container() -> Iterator[PostgresContainer]:
 
 
 @pytest.fixture(scope="session")
-def migrated_postgres_db(postgres_container: PostgresContainer) -> None:
+def migrated_postgres_db(
+    postgres_container: PostgresContainer,
+) -> None:
     config = Config("alembic.ini")
     config.set_main_option("sqlalchemy.url", postgres_container.get_connection_url())
     command.upgrade(config, "head")
@@ -48,14 +50,18 @@ def test_settings(
 
 
 @pytest_asyncio.fixture
-async def app(test_settings: Settings) -> AsyncIterator[FastAPI]:
+async def app(
+    test_settings: Settings,
+) -> AsyncIterator[FastAPI]:
     app_instance = create_app(settings=test_settings)
     async with LifespanManager(app_instance):
         yield app_instance
 
 
 @pytest_asyncio.fixture
-async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
+async def client(
+    app: FastAPI,
+) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(
         transport=ASGITransport(app=app, raise_app_exceptions=False),
         base_url="http://test",
@@ -64,7 +70,9 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 
 
 @pytest_asyncio.fixture
-async def db_session(app: FastAPI) -> AsyncIterator[AsyncSession]:
+async def db_session(
+    app: FastAPI,
+) -> AsyncIterator[AsyncSession]:
     async with app.state.session_factory() as session:
         yield session
 
