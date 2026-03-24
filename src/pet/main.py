@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from pet.api.exceptions_handler import register_exception_handlers
+from pet.api.health import health
 from pet.api.organizations import organizations
 from pet.config.settings import Settings, get_settings
 from pet.infra.sqla.db.connection import create_engine, create_session_maker
@@ -40,6 +41,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or get_settings()
 
     app = FastAPI(lifespan=build_lifespan(resolved_settings))
+    app.include_router(health)
     app.include_router(organizations)
     register_exception_handlers(app)
     return app
