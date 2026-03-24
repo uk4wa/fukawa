@@ -8,6 +8,7 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from pydantic import SecretStr
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from testcontainers.postgres import PostgresContainer  # type: ignore
 
@@ -66,3 +67,22 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 async def db_session(app: FastAPI) -> AsyncIterator[AsyncSession]:
     async with app.state.session_factory() as session:
         yield session
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def clean_db(app: FastAPI) -> None:
+    async with app.state.session_factory() as session:
+        await session.execute(
+            text(
+                """
+                TRUNCATE TABLE
+                    memberships,
+                    tasks,
+                    projects,
+                    organizations,
+                    users
+                RESTART IDENTITY CASCADE
+                """
+            )
+        )
+        await session.commit()

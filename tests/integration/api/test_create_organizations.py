@@ -36,7 +36,21 @@ async def test_api_organizations_create_rejects_casefold_duplicate(
     assert second.status_code == 409
 
     body = second.json()
-    assert body["code"] == "unique_violation"
+    assert body["code"] == "organization_name_taken"
+
+
+@pytest.mark.asyncio
+async def test_api_organizations_create_returns_422_for_domain_validation(
+    client: AsyncClient,
+) -> None:
+    response = await client.post("/orgs/", json={"name": "bad@name"})
+
+    assert response.status_code == 422
+
+    body = response.json()
+    assert body["title"] == "Validation Error"
+    assert body["detail"] == "Name contains invalid characters"
+    assert body["code"] == "validation_error"
 
 
 @pytest.mark.asyncio

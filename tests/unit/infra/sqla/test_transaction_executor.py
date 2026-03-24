@@ -4,6 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from pet.app.transaction_executor import TransactionExecutor
+from pet.domain.exc import ValidationError
 
 
 @pytest.mark.asyncio
@@ -61,6 +62,36 @@ async def test_transaction_executor_failed_raised_db_exception(
 
 
 @pytest.mark.asyncio
+async def test_transaction_executor_failed_raises_translated_validation_exception(
+    uow_mock: AsyncMock,
+    uow_factory: Mock,
+    mocker: MockerFixture,
+    executor: TransactionExecutor,
+) -> None:
+    class TranslatedError(Exception):
+        pass
+
+    translated_exc = TranslatedError("translated_validation")
+    translate_validation_error = mocker.patch(
+        "pet.app.transaction_executor.translate_domain_validation_error",
+        return_value=translated_exc,
+        autospec=True,
+    )
+    validation_error = ValidationError("invalid organization name", cause="name")
+    handler = mocker.AsyncMock(side_effect=validation_error, spec=True)
+
+    with pytest.raises(TranslatedError) as exc_info:
+        await executor.run(handler, 1)
+
+    assert exc_info.value is translated_exc
+    uow_factory.assert_called_once_with()
+    handler.assert_awaited_once_with(uow_mock, 1)
+    uow_mock.commit.assert_not_awaited()
+    translate_validation_error.assert_called_once_with(validation_error)
+    uow_mock.__aexit__.assert_awaited_once_with(TranslatedError, translated_exc, ANY)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "exception",
     [Exception("err"), RuntimeError("err")],
@@ -77,6 +108,10 @@ async def test_transaction_executor_failed_raise_any_exception(
         "pet.app.transaction_executor.translate_db_error",
         autospec=True,
     )
+    translate_validation_error = mocker.patch(
+        "pet.app.transaction_executor.translate_domain_validation_error",
+        autospec=True,
+    )
 
     with pytest.raises(type(exception), match="err") as exc_info:
         await executor.run(handler, 1)
@@ -86,6 +121,7 @@ async def test_transaction_executor_failed_raise_any_exception(
     handler.assert_awaited_once_with(uow_mock, 1)
     uow_mock.commit.assert_not_awaited()
     translate_db_error.assert_not_called()
+    translate_validation_error.assert_not_called()
 
     uow_mock.__aenter__.assert_awaited_once()
     uow_mock.__aexit__.assert_awaited_once_with(type(exception), exception, ANY)

@@ -1,7 +1,8 @@
 from collections.abc import Awaitable, Callable
 from typing import Concatenate
 
-from pet.domain.exc import DBError, translate_db_error
+from pet.app.exc import translate_db_error, translate_domain_validation_error
+from pet.domain.exc import DBError, ValidationError
 from pet.domain.uow import UnitOfWork
 
 
@@ -22,3 +23,5 @@ class TransactionExecutor:
                 return result
             except DBError as e:
                 raise translate_db_error(e) from e
+            except ValidationError as e:
+                raise translate_domain_validation_error(e) from e
