@@ -81,9 +81,6 @@ def test_determine_exc_maps_unknown_sqla_error(mocker: MockerFixture):
     assert result.cause is error
 
 
-# pg_sqlstate_from_integrity tests
-
-
 def test_pg_sqlstate_from_integrity_reads_sqlstate_first(mocker: MockerFixture):
     error = mocker.Mock()
     error.orig = mocker.Mock(sqlstate="23505", pgcode="99999")
