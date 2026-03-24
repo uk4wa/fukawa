@@ -40,6 +40,20 @@ async def test_api_organizations_create_rejects_casefold_duplicate(
 
 
 @pytest.mark.asyncio
+async def test_api_organizations_create_returns_422_for_domain_validation(
+    client: AsyncClient,
+) -> None:
+    response = await client.post("/orgs/", json={"name": "bad@name"})
+
+    assert response.status_code == 422
+
+    body = response.json()
+    assert body["title"] == "Validation Error"
+    assert body["detail"] == "Name contains invalid characters"
+    assert body["code"] == "validation_error"
+
+
+@pytest.mark.asyncio
 async def test_db_organizations_name_min_length_constraint(db_session: AsyncSession) -> None:
     stmt = text(
         """

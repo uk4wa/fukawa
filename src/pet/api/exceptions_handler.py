@@ -10,7 +10,10 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from pet.domain.exc import AppError, DBError
+from pet.domain.exc import (
+    AppError,
+    DBError,
+)
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 
@@ -54,6 +57,7 @@ def problem(
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+
     @app.exception_handler(AppError)
     async def app_error_handler(r: Request, exc: AppError):  # type:ignore
         rid = _request_id(r)

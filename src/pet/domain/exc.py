@@ -50,7 +50,30 @@ class InternalError(AppError):
         )
 
 
-class DBErrorKind(enum.StrEnum):
+class UnprocessableEntity(AppError):
+    def __init__(
+        self,
+        title: str,
+        code: str,
+        detail: str | None = None,
+        *,
+        status_code: int = 422,
+        extra: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(
+            title=title,
+            code=code,
+            detail=detail,
+            status_code=status_code,
+            extra=extra,
+        )
+
+
+class ErrorKind(enum.StrEnum):
+    pass
+
+
+class DBErrorKind(ErrorKind):
     UNIQUE = "unique_violation"
     FK = "fk_violation"
     NOT_NULL = "not_null_violation"
@@ -59,6 +82,10 @@ class DBErrorKind(enum.StrEnum):
     UNKNOWN = "unknown"
     OTHER_INTEGRITY = "other_integrity"
     TRANSIENT = "transient"
+
+
+class AppErroKind(ErrorKind):
+    VALIDATION = "validation_error"
 
 
 @dataclass(slots=True)
@@ -97,11 +124,24 @@ def translate_db_error(e: DBError) -> AppError:
             )
 
 
-@dataclass
 class ValidationError(ValueError):
-    message: str
+    def __init__(self, message: str, *, cause: str | None = None) -> None:
+        super().__init__(message)
+        self.message = message
+        self.cause = cause
 
 
-@dataclass
 class NameValidationError(ValidationError):
     pass
+
+
+def translate_domain_validation_error(e: ValidationError) -> AppError:
+    return UnprocessableEntity(
+        title="Validation Error",
+        code=AppErroKind.VALIDATION,
+        detail=e.message,
+        extra={
+            "retryable": False,
+            "cause": e.cause,
+        },
+    )
