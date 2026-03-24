@@ -1,5 +1,6 @@
 from functools import cached_property, lru_cache
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -37,6 +38,9 @@ class Settings(BaseSettings):
     engine: EngineSettings = Field(default_factory=EngineSettings)
     session_maker: SessionMakerSettings = Field(default_factory=SessionMakerSettings)
 
+    def __init__(self, **values: Any) -> None:
+        super().__init__(**values)
+
     @cached_property
     def dsn(self) -> str:
         return URL.create(
@@ -59,4 +63,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()  # type: ignore
+    return Settings()
