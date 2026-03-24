@@ -17,8 +17,6 @@ from pet.infra.sqla.db.exc import (
     pg_sqlstate_from_integrity,
 )
 
-# determine_exc tests
-
 
 @pytest.mark.parametrize(
     ("sqlstate", "expected_kind"),
@@ -65,7 +63,7 @@ def test_determine_exc_maps_operational_error(mocker: MockerFixture):
     result = determine_exc(error)
 
     assert result.kind == DBErrorKind.OPERATIONAL
-    assert result.title == "db_unvailable"
+    assert result.title == "db_unavailable"
     assert result.retryable
     assert result.sqlstate is None
     assert result.cause is error
@@ -81,9 +79,6 @@ def test_determine_exc_maps_unknown_sqla_error(mocker: MockerFixture):
     assert result.title == "db_error"
     assert result.retryable is False
     assert result.cause is error
-
-
-# pg_sqlstate_from_integrity tests
 
 
 def test_pg_sqlstate_from_integrity_reads_sqlstate_first(mocker: MockerFixture):

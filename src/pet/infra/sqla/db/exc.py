@@ -58,7 +58,7 @@ def determine_exc(e: SQLAlchemyError) -> DBError:
     if isinstance(e, OperationalError):
         return DBError(
             kind=DBErrorKind.OPERATIONAL,
-            title="db_unvailable",
+            title="db_unavailable",
             retryable=True,
             cause=e,
         )

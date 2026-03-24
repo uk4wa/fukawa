@@ -7,7 +7,7 @@ from pet.app.organizations import (
     CreateOrganizationCmdIn,
     create_organization_cmd,
 )
-from pet.domain.models import Organization as OrganizationORM
+from pet.domain.models import Organization
 
 
 @pytest.mark.asyncio
@@ -30,7 +30,7 @@ async def test_create_organization_cmd_creates_domain_org_and_returns_public_id(
     uow.orgs.create.assert_called_once()
     (args,), _ = uow.orgs.create.call_args
 
-    assert isinstance(args, OrganizationORM)
+    assert isinstance(args, Organization)
     assert args.public_id.value == uuid
     assert args.name.value == cmd.name
     assert result.val == uuid
