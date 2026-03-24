@@ -10,7 +10,7 @@ from pet.domain.exc import ValidationError
 @pytest.mark.asyncio
 async def test_transaction_executor_passed(
     uow_mock: AsyncMock,
-    uow_factory: Mock,
+    uow_factory_mock: Mock,
     mocker: MockerFixture,
     executor: TransactionExecutor,
 ) -> None:
@@ -19,7 +19,7 @@ async def test_transaction_executor_passed(
     result = await executor.run(handler, 123, q="123str")
 
     assert result == "ok"
-    uow_factory.assert_called_once_with()
+    uow_factory_mock.assert_called_once_with()
     uow_mock.__aenter__.assert_awaited_once_with()
     handler.assert_awaited_once_with(uow_mock, 123, q="123str")
     uow_mock.commit.assert_awaited_once()
@@ -29,7 +29,7 @@ async def test_transaction_executor_passed(
 @pytest.mark.asyncio
 async def test_transaction_executor_failed_raised_db_exception(
     uow_mock: AsyncMock,
-    uow_factory: Mock,
+    uow_factory_mock: Mock,
     mocker: MockerFixture,
     executor: TransactionExecutor,
 ) -> None:
@@ -53,7 +53,7 @@ async def test_transaction_executor_failed_raised_db_exception(
         await executor.run(handler, 2321, q="str")
 
     assert exc_info.value is translated_db_error.return_value
-    uow_factory.assert_called_once_with()
+    uow_factory_mock.assert_called_once_with()
     translated_db_error.assert_called_once_with(fake_db_error)
     handler.assert_awaited_once_with(uow_mock, 2321, q="str")
     uow_mock.commit.assert_not_awaited()
@@ -99,7 +99,7 @@ async def test_transaction_executor_failed_raises_translated_validation_exceptio
 async def test_transaction_executor_failed_raise_any_exception(
     exception: Exception,
     uow_mock: AsyncMock,
-    uow_factory: Mock,
+    uow_factory_mock: Mock,
     mocker: MockerFixture,
     executor: TransactionExecutor,
 ) -> None:
@@ -117,7 +117,7 @@ async def test_transaction_executor_failed_raise_any_exception(
         await executor.run(handler, 1)
 
     assert exc_info.value is exception
-    uow_factory.assert_called_once_with()
+    uow_factory_mock.assert_called_once_with()
     handler.assert_awaited_once_with(uow_mock, 1)
     uow_mock.commit.assert_not_awaited()
     translate_db_error.assert_not_called()
