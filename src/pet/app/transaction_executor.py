@@ -1,12 +1,8 @@
 from collections.abc import Awaitable, Callable
 from typing import Concatenate
 
-from pet.domain.exc import (
-    DBError,
-    ValidationError,
-    translate_db_error,
-    translate_domain_validation_error,
-)
+from pet.app.exc import translate_db_error, translate_domain_validation_error
+from pet.domain.exc import DBError, ValidationError
 from pet.domain.uow import UnitOfWork
 
 

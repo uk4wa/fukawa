@@ -36,7 +36,7 @@ async def test_api_organizations_create_rejects_casefold_duplicate(
     assert second.status_code == 409
 
     body = second.json()
-    assert body["code"] == "unique_violation"
+    assert body["code"] == "organization_name_taken"
 
 
 @pytest.mark.asyncio

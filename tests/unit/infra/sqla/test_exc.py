@@ -2,14 +2,20 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 
+from pet.app.exc import translate_db_error
 from pet.domain.exc import (
+    AppError,
     Conflict,
     DBError,
     DBErrorKind,
     InternalError,
-    translate_db_error,
+    ServiceUnavailable,
 )
-from pet.infra.sqla.db.exc import determine_exc, pg_sqlstate_from_integrity
+from pet.infra.sqla.db.exc import (
+    determine_exc,
+    pg_constraint_name_from_integrity,
+    pg_sqlstate_from_integrity,
+)
 
 # determine_exc tests
 
@@ -47,6 +53,7 @@ def test_determine_exc_maps_integrity_sqlstate(
     assert result.title == "db_integrity"
     assert not result.retryable
     assert result.sqlstate == sqlstate
+    assert result.constraint_name is None
     assert result.cause is error
 
     pg_sqlstate_mock.assert_called_once_with(error)
@@ -97,19 +104,29 @@ def test_pg_sqlstate_from_integrity_falls_back_to_pgcode(mocker: MockerFixture) 
     assert result == "23503"
 
 
+def test_pg_constraint_name_from_integrity_reads_constraint_name(mocker: MockerFixture) -> None:
+    error = mocker.Mock()
+    error.orig = mocker.Mock(constraint_name="uq_organizations_name_canonical")
+
+    result = pg_constraint_name_from_integrity(error)
+
+    assert result == "uq_organizations_name_canonical"
+
+
 def test_translate_db_error_returns_conflict_for_unique(mocker: MockerFixture):
     error = DBError(
         kind=DBErrorKind.UNIQUE,
         title="error title",
         detail="error detail",
+        constraint_name="uq_organizations_name_canonical",
     )
 
     result = translate_db_error(error)
 
     assert isinstance(result, Conflict)
-    assert result.title == "error title"
-    assert result.detail == "error detail"
-    assert result.code == DBErrorKind.UNIQUE
+    assert result.title == "Conflict"
+    assert result.detail == "Organization name is already taken"
+    assert result.code == "organization_name_taken"
 
 
 def test_translate_db_error_returns_internall_for_non_unique(mocker: MockerFixture):
@@ -121,7 +138,29 @@ def test_translate_db_error_returns_internall_for_non_unique(mocker: MockerFixtu
 
     result = translate_db_error(error)
 
+    assert isinstance(result, ServiceUnavailable)
+    assert result.title == "Service Unavailable"
+    assert result.detail == "Temporary service outage"
+    assert result.code == "service_unavailable"
+
+
+def test_translate_db_error_returns_generic_conflict_for_unknown_unique_constraint() -> None:
+    error = DBError(
+        kind=DBErrorKind.UNIQUE,
+        constraint_name="uq_unknown_unique",
+    )
+
+    result = translate_db_error(error)
+
+    assert isinstance(result, Conflict)
+    assert result.code == "conflict"
+
+
+def test_translate_db_error_returns_internal_error_for_unknown_db_error() -> None:
+    error = DBError(kind=DBErrorKind.UNKNOWN)
+
+    result = translate_db_error(error)
+
     assert isinstance(result, InternalError)
-    assert result.title == "error title"
-    assert result.detail == "error detail"
-    assert result.code == DBErrorKind.OPERATIONAL
+    assert isinstance(result, AppError)
+    assert result.code == "internal_error"
