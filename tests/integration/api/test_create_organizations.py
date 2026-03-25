@@ -6,6 +6,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pet.app.exc import VALIDATION_ERROR_TITLE, AppErrorCode
+
 
 @pytest.mark.asyncio
 async def test_api_organizations_create_success(
@@ -43,17 +45,44 @@ async def test_api_organizations_create_rejects_casefold_duplicate(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("name", "expected_detail"),
+    [
+        ("bad@name", "Name contains invalid characters"),
+        (65 * "a", "Name is too long"),
+        ("sm", "Name is too short"),
+        ("", "Name cannot be empty"),
+    ],
+)
 async def test_api_organizations_create_returns_422_for_domain_validation(
     client: AsyncClient,
+    name: str,
+    expected_detail: str,
 ) -> None:
-    response = await client.post("/orgs/", json={"name": "bad@name"})
+    response = await client.post("/orgs/", json={"name": name})
 
     assert response.status_code == 422
 
     body = response.json()
-    assert body["title"] == "Validation Error"
-    assert body["detail"] == "Name contains invalid characters"
-    assert body["code"] == "validation_error"
+    assert body["title"] == VALIDATION_ERROR_TITLE
+    assert body["detail"] == expected_detail
+    assert body["code"] == AppErrorCode.VALIDATION
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("payload", [{}, {"name": 123}])
+async def test_api_organizations_create_returns_422_for_request_validation(
+    client: AsyncClient,
+    payload: dict[str, object],
+) -> None:
+    response = await client.post("/orgs/", json=payload)
+
+    assert response.status_code == 422
+
+    body = response.json()
+    assert body["title"] == VALIDATION_ERROR_TITLE
+    assert body["detail"] == "Request validation failed"
+    assert body["code"] == AppErrorCode.VALIDATION
 
 
 @pytest.mark.asyncio

@@ -12,6 +12,8 @@ from pet.domain.exc import (
     ValidationError,
 )
 
+VALIDATION_ERROR_TITLE = "Validation Error"
+
 
 class AppErrorCode(enum.StrEnum):
     CONFLICT = "conflict"
@@ -23,7 +25,7 @@ class AppErrorCode(enum.StrEnum):
 
 def translate_domain_validation_error(e: ValidationError) -> AppError:
     return UnprocessableEntity(
-        title="Validation Error",
+        title=VALIDATION_ERROR_TITLE,
         code=AppErrorCode.VALIDATION,
         detail=e.message,
         extra={
