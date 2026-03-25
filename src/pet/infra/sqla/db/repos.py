@@ -17,5 +17,4 @@ class SQLAlchemyOrganizationsRepo:
         return ORM(
             public_id=domain.public_id.value,
             name=domain.name.value,
-            name_canonical=domain.name.canonical,
         )

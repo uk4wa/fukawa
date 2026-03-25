@@ -9,6 +9,7 @@ from pet.domain.exc import (
     DBError,
     DBErrorKind,
     InternalError,
+    UnprocessableEntity,
     ServiceUnavailable,
 )
 from pet.infra.sqla.db.exc import (
@@ -149,6 +150,30 @@ def test_translate_db_error_returns_generic_conflict_for_unknown_unique_constrai
 
     assert isinstance(result, Conflict)
     assert result.code == "conflict"
+
+
+@pytest.mark.parametrize(
+    ("constraint_name", "expected_detail"),
+    [
+        ("ck_organizations_name_min_len", "Name is too short"),
+        ("ck_organizations_name_casefold_max_len", "Name is too long"),
+        ("ck_organizations_name_trimmed", "Name cannot be empty"),
+    ],
+)
+def test_translate_db_error_returns_validation_error_for_known_check_constraints(
+    constraint_name: str,
+    expected_detail: str,
+) -> None:
+    error = DBError(
+        kind=DBErrorKind.CHECK,
+        constraint_name=constraint_name,
+    )
+
+    result = translate_db_error(error)
+
+    assert isinstance(result, UnprocessableEntity)
+    assert result.code == "validation_error"
+    assert result.detail == expected_detail
 
 
 def test_translate_db_error_returns_internal_error_for_unknown_db_error() -> None:

@@ -215,4 +215,6 @@ def downgrade() -> None:
     op.drop_table("memberships")
     op.drop_table("users")
     op.drop_table("organizations")
+    op.execute("DROP TYPE IF EXISTS org_role")
+    op.execute("DROP TYPE IF EXISTS task_status")
     # ### end Alembic commands ###

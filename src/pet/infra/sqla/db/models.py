@@ -72,7 +72,10 @@ class Organization(Base, IdMixin, TimestampMixin):
     __tablename__ = "organizations"
 
     name: Mapped[str] = mapped_column(String(ORG_NAME_MAX_LEN), nullable=False)
-    name_canonical: Mapped[str] = mapped_column(String(ORG_NAME_MAX_LEN), nullable=False)
+    name_canonical: Mapped[str] = mapped_column(
+        String(ORG_NAME_MAX_LEN),
+        sa.Computed("normalize(casefold(normalize(name, NFC)), NFC)", persisted=True),
+    )
 
     members: Mapped[list["Membership"]] = relationship(
         back_populates="org",
@@ -83,8 +86,20 @@ class Organization(Base, IdMixin, TimestampMixin):
     __table_args__ = (
         sa.UniqueConstraint("name_canonical", name="uq_organizations_name_canonical"),
         sa.CheckConstraint(
-            f"char_length(trim(name)) >= {ORG_NAME_MIN_LEN}",
-            name="ck_organizations_name_min_len",
+            "name = btrim(name)",
+            name="name_trimmed",
+        ),
+        sa.CheckConstraint(
+            "name IS NFC NORMALIZED",
+            name="name_nfc_normalized",
+        ),
+        sa.CheckConstraint(
+            f"char_length(name) >= {ORG_NAME_MIN_LEN}",
+            name="name_min_len",
+        ),
+        sa.CheckConstraint(
+            f"char_length(normalize(casefold(normalize(name, NFC)), NFC)) <= {ORG_NAME_MAX_LEN}",
+            name="name_casefold_max_len",
         ),
     )
 
@@ -110,12 +125,6 @@ class Membership(Base, IdMixin, TimestampMixin):
         server_default=sa.text("'member'"),
     )
 
-    __table_args__ = (
-        sa.UniqueConstraint("user_id", "org_id", name="uq_memberships_org_user"),
-        sa.Index("ix_memberships_org_id", "org_id"),
-        # sa.Index("ix_memberships_user_id", "user_id"),
-    )
-
     user: Mapped["User"] = relationship(
         back_populates="org_memberships",
         lazy="raise_on_sql",
@@ -124,6 +133,11 @@ class Membership(Base, IdMixin, TimestampMixin):
     org: Mapped["Organization"] = relationship(
         back_populates="members",
         lazy="raise_on_sql",
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "org_id", name="uq_memberships_org_user"),
+        sa.Index("ix_memberships_org_id", "org_id"),
     )
 
 
@@ -138,16 +152,13 @@ class Project(Base, IdMixin, TimestampMixin):
         nullable=False,
     )
 
-    __table_args__ = (
-        sa.UniqueConstraint("org_id", "name", name="uq_projects_org_name"),
-        # sa.Index("ix_projects_org_id", "org_id"),
-    )
-
     tasks: Mapped[list["Task"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
         lazy="raise_on_sql",
     )
+
+    __table_args__ = (sa.UniqueConstraint("org_id", "name", name="uq_projects_org_name"),)
 
 
 class TaskStatus(enum.StrEnum):
