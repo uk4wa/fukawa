@@ -9,8 +9,8 @@ from pet.domain.exc import (
     DBError,
     DBErrorKind,
     InternalError,
-    UnprocessableEntity,
     ServiceUnavailable,
+    UnprocessableEntity,
 )
 from pet.infra.sqla.db.exc import (
     determine_exc,

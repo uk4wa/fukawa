@@ -30,8 +30,11 @@ def upgrade() -> None:
         "organizations",
         sa.Column(
             "name_canonical",
-            sa.String(length=64),
-            sa.Computed("normalize(casefold(normalize(name, NFC)), NFC)", persisted=True),
+            sa.Text(),
+            sa.Computed(
+                'normalize(casefold(normalize(name, NFC) COLLATE "pg_unicode_fast"), NFC)',
+                persisted=True,
+            ),
             nullable=False,
         ),
     )
@@ -64,7 +67,11 @@ def upgrade() -> None:
     op.create_check_constraint(
         op.f("ck_organizations_name_casefold_max_len"),
         "organizations",
-        "char_length(normalize(casefold(normalize(name, NFC)), NFC)) <= 64",
+        """
+        char_length(
+            normalize(casefold(normalize(name, NFC) COLLATE "pg_unicode_fast"), NFC)
+        ) <= 64
+        """,
     )
 
 
@@ -104,13 +111,16 @@ def downgrade() -> None:
     op.drop_column("organizations", "name_canonical")
     op.add_column(
         "organizations",
-        sa.Column("name_canonical", sa.String(length=64), nullable=False),
+        sa.Column("name_canonical", sa.Text(), nullable=False),
     )
     op.execute(
         sa.text(
             """
             UPDATE organizations
-            SET name_canonical = normalize(casefold(normalize(name, NFC)), NFC)
+            SET name_canonical = normalize(
+                casefold(normalize(name, NFC) COLLATE "pg_unicode_fast"),
+                NFC
+            )
             """
         )
     )

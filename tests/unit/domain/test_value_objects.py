@@ -14,7 +14,7 @@ def test_name_rejects_values_whose_length_exceeds_max_len() -> None:
 
 
 def test_name_normalizes_to_nfc() -> None:
-    value = "A\u0308rger Stra\u00DFe"
+    value = "A\u0308rger Stra\u00dfe"
 
     result = Name.create(value)
 

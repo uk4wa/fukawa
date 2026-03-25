@@ -46,6 +46,20 @@ async def test_api_organizations_create_rejects_casefold_duplicate(
 
 
 @pytest.mark.asyncio
+async def test_api_organizations_create_rejects_unicode_casefold_duplicate(
+    client: AsyncClient,
+) -> None:
+    first = await client.post("/orgs/", json={"name": "Stra\u00dfe"})
+    second = await client.post("/orgs/", json={"name": "STRASSE"})
+
+    assert first.status_code == 201
+    assert second.status_code == 409
+
+    body = second.json()
+    assert body["code"] == "organization_name_taken"
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("name", "expected_detail"),
     [

@@ -7,12 +7,15 @@ from sqlalchemy import (
     BigInteger,
     DateTime,
     String,
+    Text,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from pet.domain.value_objects import ORG_NAME_MAX_LEN, ORG_NAME_MIN_LEN
 from pet.infra.sqla.db.base import Base
+
+ORG_NAME_CANONICAL_SQL = 'normalize(casefold(normalize(name, NFC) COLLATE "pg_unicode_fast"), NFC)'
 
 
 class IdMixin:
@@ -73,8 +76,8 @@ class Organization(Base, IdMixin, TimestampMixin):
 
     name: Mapped[str] = mapped_column(String(ORG_NAME_MAX_LEN), nullable=False)
     name_canonical: Mapped[str] = mapped_column(
-        String(ORG_NAME_MAX_LEN),
-        sa.Computed("normalize(casefold(normalize(name, NFC)), NFC)", persisted=True),
+        Text,
+        sa.Computed(ORG_NAME_CANONICAL_SQL, persisted=True),
     )
 
     members: Mapped[list["Membership"]] = relationship(
@@ -98,7 +101,7 @@ class Organization(Base, IdMixin, TimestampMixin):
             name="name_min_len",
         ),
         sa.CheckConstraint(
-            f"char_length(normalize(casefold(normalize(name, NFC)), NFC)) <= {ORG_NAME_MAX_LEN}",
+            f"char_length({ORG_NAME_CANONICAL_SQL}) <= {ORG_NAME_MAX_LEN}",
             name="name_casefold_max_len",
         ),
     )
