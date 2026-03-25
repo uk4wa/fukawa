@@ -2,12 +2,11 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, StrictStr
 
 from pet.app.organizations import CreateOrganizationCmdIn, create_organization_cmd
 from pet.di.db import get_executor
 from pet.domain.uow import TransactionExecutor
-from pet.domain.value_objects import ORG_NAME_MAX_LEN, ORG_NAME_MIN_LEN
 
 organizations = APIRouter(prefix="/orgs")
 
@@ -15,7 +14,7 @@ Executor = Annotated[TransactionExecutor, Depends(get_executor)]
 
 
 class CreateOrgDtoIn(BaseModel):
-    name: str = Field(..., min_length=ORG_NAME_MIN_LEN, max_length=ORG_NAME_MAX_LEN)
+    name: StrictStr
 
 
 class PublicId(BaseModel):

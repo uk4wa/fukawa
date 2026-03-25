@@ -12,6 +12,8 @@ from pet.domain.exc import (
     ValidationError,
 )
 
+VALIDATION_ERROR_TITLE = "Validation Error"
+
 
 class AppErrorCode(enum.StrEnum):
     CONFLICT = "conflict"
@@ -23,7 +25,7 @@ class AppErrorCode(enum.StrEnum):
 
 def translate_domain_validation_error(e: ValidationError) -> AppError:
     return UnprocessableEntity(
-        title="Validation Error",
+        title=VALIDATION_ERROR_TITLE,
         code=AppErrorCode.VALIDATION,
         detail=e.message,
         extra={
@@ -53,6 +55,34 @@ def translate_db_error(e: DBError) -> AppError:
                 title="Conflict",
                 code=AppErrorCode.CONFLICT,
                 detail="Resource already exists",
+                extra=extra,
+            )
+        case DBErrorKind.CHECK:
+            if e.constraint_name == "ck_organizations_name_min_len":
+                return UnprocessableEntity(
+                    title=VALIDATION_ERROR_TITLE,
+                    code=AppErrorCode.VALIDATION,
+                    detail="Name is too short",
+                    extra=extra,
+                )
+            if e.constraint_name == "ck_organizations_name_casefold_max_len":
+                return UnprocessableEntity(
+                    title=VALIDATION_ERROR_TITLE,
+                    code=AppErrorCode.VALIDATION,
+                    detail="Name is too long",
+                    extra=extra,
+                )
+            if e.constraint_name == "ck_organizations_name_trimmed":
+                return UnprocessableEntity(
+                    title=VALIDATION_ERROR_TITLE,
+                    code=AppErrorCode.VALIDATION,
+                    detail="Name cannot be empty",
+                    extra=extra,
+                )
+            return UnprocessableEntity(
+                title=VALIDATION_ERROR_TITLE,
+                code=AppErrorCode.VALIDATION,
+                detail="Stored value violates validation rules",
                 extra=extra,
             )
         case DBErrorKind.OPERATIONAL | DBErrorKind.TRANSIENT:

@@ -22,13 +22,16 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.add_column(
         "organizations",
-        sa.Column("name_canonical", sa.String(length=64), nullable=True),
+        sa.Column("name_canonical", sa.Text(), nullable=True),
     )
     op.execute(
         sa.text(
             """
             UPDATE organizations
-            SET name_canonical = casefold(name)
+            SET name_canonical = normalize(
+                casefold(normalize(name, NFC) COLLATE "pg_unicode_fast"),
+                NFC
+            )
             WHERE name_canonical IS NULL
             """
         )
@@ -37,12 +40,16 @@ def upgrade() -> None:
     op.alter_column(
         "organizations",
         "name_canonical",
-        existing_type=sa.String(length=64),
+        existing_type=sa.Text(),
         nullable=False,
     )
-    op.drop_constraint(op.f("uq_organizations_name"), "organizations", type_="unique")
+    op.drop_constraint(
+        op.f("uq_organizations_name"),
+        "organizations",
+        type_="unique",
+    )
     op.create_unique_constraint(
-        "uq_organizations_name_canonical",
+        op.f("uq_organizations_name_canonical"),
         "organizations",
         ["name_canonical"],
     )
@@ -50,7 +57,11 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_constraint("uq_organizations_name_canonical", "organizations", type_="unique")
+    op.drop_constraint(
+        op.f("uq_organizations_name_canonical"),
+        "organizations",
+        type_="unique",
+    )
     op.create_unique_constraint(
         op.f("uq_organizations_name"),
         "organizations",

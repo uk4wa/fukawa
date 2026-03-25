@@ -28,7 +28,7 @@ def upgrade() -> None:
         existing_nullable=False,
     )
     op.create_check_constraint(
-        "ck_organizations_name_min_len",
+        op.f("ck_organizations_name_min_len"),
         "organizations",
         "char_length(trim(name)) >= 3",
     )
@@ -36,7 +36,11 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_constraint("ck_organizations_name_min_len", "organizations", type_="check")
+    op.drop_constraint(
+        op.f("ck_organizations_name_min_len"),
+        "organizations",
+        type_="check",
+    )
     op.alter_column(
         "organizations",
         "name",
