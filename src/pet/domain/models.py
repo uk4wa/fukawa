@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Self
 
 from pet.domain.value_objects import Name, PublicId
 
@@ -13,7 +14,7 @@ class Organization:
         cls,
         public_id: PublicId,
         name: Name,
-    ):
+    ) -> Self:
         return cls(
             public_id=public_id,
             name=name,

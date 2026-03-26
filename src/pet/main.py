@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from starlette.types import Lifespan
 
 from pet.api.exceptions_handler import register_exception_handlers
 from pet.api.health import health
@@ -10,7 +11,7 @@ from pet.config.settings import Settings, get_settings
 from pet.infra.sqla.db.connection import create_engine, create_session_maker
 
 
-def build_lifespan(settings: Settings):
+def build_lifespan(settings: Settings) -> Lifespan[FastAPI]:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 

@@ -111,7 +111,7 @@ def downgrade() -> None:
     op.drop_column("organizations", "name_canonical")
     op.add_column(
         "organizations",
-        sa.Column("name_canonical", sa.Text(), nullable=False),
+        sa.Column("name_canonical", sa.Text(), nullable=True),
     )
     op.execute(
         sa.text(
@@ -123,6 +123,12 @@ def downgrade() -> None:
             )
             """
         )
+    )
+    op.alter_column(
+        "organizations",
+        "name_canonical",
+        existing_type=sa.Text(),
+        nullable=False,
     )
     op.create_unique_constraint(
         op.f("uq_organizations_name_canonical"),
