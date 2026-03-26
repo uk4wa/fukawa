@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from pet.domain.repos import OrganizationsRepo
 from pet.infra.sqla.db.exc import UoWNotInitializedError, determine_exc
 
-OrganizationRepoFactory = Callable[[AsyncSession], OrganizationsRepo]
-AsyncSessionFactory = async_sessionmaker[AsyncSession]
+type OrganizationRepoFactory = Callable[[AsyncSession], OrganizationsRepo]
+type AsyncSessionFactory = async_sessionmaker[AsyncSession]
 
 
 class SQLAlchemyUnitOfWork:

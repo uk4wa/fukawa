@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from pet.domain.exc import DBError, DBErrorKind
 
 
-def get_orig(err: Exception):
+def get_orig(err: Exception) -> object | None:
     return getattr(err, "orig", None)
 
 
@@ -72,6 +72,6 @@ def determine_exc(e: SQLAlchemyError) -> DBError:
 
 
 class UoWNotInitializedError(RuntimeError):
-    def __init__(self, field: str):
+    def __init__(self, field: str) -> None:
         super().__init__(f"UnitOfWork is not started: '{field}' is not initialized")
         self.field = field

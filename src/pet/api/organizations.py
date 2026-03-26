@@ -29,7 +29,7 @@ class PublicId(BaseModel):
 async def create_organization(
     org: CreateOrgDtoIn,
     executor: Executor,
-):
+) -> PublicId:
     cmd = CreateOrganizationCmdIn(name=org.name)
     public_id = await executor.run(create_organization_cmd, cmd)
     return PublicId(public_id=public_id.val)

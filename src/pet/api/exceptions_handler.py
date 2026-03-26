@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, cast
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -60,20 +60,22 @@ def problem(
 def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(AppError)
-    async def app_error_handler(r: Request, exc: AppError):  # type:ignore
+    async def app_error_handler(r: Request, exc: Exception) -> JSONResponse:
+        app_error = cast(AppError, exc)
         rid = _request_id(r)
         return problem(
-            title=exc.title,
-            status=exc.status_code,
-            detail=exc.detail,
+            title=app_error.title,
+            status=app_error.status_code,
+            detail=app_error.detail,
             instance=(r.url.path),
-            code=exc.code,
+            code=app_error.code,
             request_id=rid,
         )
 
     @app.exception_handler(DBError)
-    async def db_error_handler(request: Request, exc: DBError):  # type:ignore
-        translated = translate_db_error(exc)
+    async def db_error_handler(request: Request, exc: Exception) -> JSONResponse:
+        db_error = cast(DBError, exc)
+        translated = translate_db_error(db_error)
         rid = _request_id(request)
         return problem(
             status=translated.status_code,
@@ -85,25 +87,23 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def http_error_handler(  # type:ignore
-        r: Request, exc: StarletteHTTPException
-    ):
+    async def http_error_handler(r: Request, exc: Exception) -> JSONResponse:
+        http_error = cast(StarletteHTTPException, exc)
         rid = _request_id(r)
 
         return problem(
             title="HTTPException",
-            status=exc.status_code,
-            detail=exc.detail,
+            status=http_error.status_code,
+            detail=http_error.detail,
             instance=(r.url.path),
             code="http_error",
             request_id=rid,
-            headers=dict(exc.headers or {}),
+            headers=dict(http_error.headers or {}),
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_error_handler(  # type:ignore
-        request: Request, exc: RequestValidationError
-    ):
+    async def validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
+        validation_error = cast(RequestValidationError, exc)
         rid = _request_id(request)
 
         return problem(
@@ -111,13 +111,13 @@ def register_exception_handlers(app: FastAPI) -> None:
             title="Validation Error",
             detail="Request validation failed",
             code="validation_error",
-            errors=exc.errors(),
+            errors=validation_error.errors(),
             instance=str(request.url.path),
             request_id=rid,
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_error_handler(request: Request, exc: Exception):  # type:ignore
+    async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
         rid = _request_id(request)
         logger.exception("Unhandled error", extra={"path": request.url.path, "request_id": rid})
         return problem(
