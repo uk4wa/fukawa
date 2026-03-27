@@ -11,6 +11,7 @@ from pet.app.exc import VALIDATION_ERROR_TITLE, AppErrorCode
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_api_organizations_create_success(
     client: AsyncClient,
     db_session: AsyncSession,
@@ -32,6 +33,7 @@ async def test_api_organizations_create_success(
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_api_organizations_create_rejects_casefold_duplicate(
     client: AsyncClient,
 ) -> None:
@@ -46,6 +48,7 @@ async def test_api_organizations_create_rejects_casefold_duplicate(
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_api_organizations_create_rejects_unicode_casefold_duplicate(
     client: AsyncClient,
 ) -> None:
@@ -60,6 +63,7 @@ async def test_api_organizations_create_rejects_unicode_casefold_duplicate(
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 @pytest.mark.parametrize(
     ("name", "expected_detail"),
     [
@@ -84,6 +88,7 @@ async def test_api_organizations_create_returns_422_for_domain_validation(
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_api_organizations_create_normalizes_unicode_name_to_nfc(
     client: AsyncClient,
     db_session: AsyncSession,
@@ -101,7 +106,8 @@ async def test_api_organizations_create_normalizes_unicode_name_to_nfc(
 
 
 @pytest.mark.asyncio
-async def test_api_organizations_create_returns_422_for_db_casefold_validation(
+@pytest.mark.integration
+async def test_api_organizations_create_returns_422_for_canonical_length_validation(
     client: AsyncClient,
 ) -> None:
     response = await client.post("/orgs/", json={"name": "\u00df" * 64})
@@ -115,6 +121,24 @@ async def test_api_organizations_create_returns_422_for_db_casefold_validation(
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
+async def test_api_openapi_describes_organization_name_contract(
+    client: AsyncClient,
+) -> None:
+    response = await client.get("/openapi.json")
+
+    assert response.status_code == 200
+
+    schema = response.json()["components"]["schemas"]["CreateOrgDtoIn"]
+    name_schema = schema["properties"]["name"]
+
+    assert name_schema["type"] == "string"
+    assert "trimmed and normalized to NFC" in name_schema["description"]
+    assert "canonical form must not exceed 64 characters" in name_schema["description"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
 @pytest.mark.parametrize("payload", [{}, {"name": 123}])
 async def test_api_organizations_create_returns_422_for_request_validation(
     client: AsyncClient,
@@ -131,6 +155,7 @@ async def test_api_organizations_create_returns_422_for_request_validation(
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_db_organizations_name_min_length_constraint(
     db_session: AsyncSession,
 ) -> None:
@@ -155,6 +180,7 @@ async def test_db_organizations_name_min_length_constraint(
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_db_organizations_name_canonical_is_generated(
     db_session: AsyncSession,
 ) -> None:

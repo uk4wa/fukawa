@@ -19,3 +19,13 @@ def test_name_normalizes_to_nfc() -> None:
     result = Name.create(value)
 
     assert result.value == normalize("NFC", value)
+
+
+def test_name_rejects_value_whose_casefolded_form_exceeds_max_len() -> None:
+    with pytest.raises(NameValidationError, match="Name is too long"):
+        Name.create("\u00df" * ORG_NAME_MAX_LEN)
+
+
+def test_name_applies_strip_before_length_validation() -> None:
+    with pytest.raises(NameValidationError, match="Name is too short"):
+        Name.create("  ab  ")
