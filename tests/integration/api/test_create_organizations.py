@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pet.app.exc import VALIDATION_ERROR_TITLE, AppErrorCode
+from pet.app.errors import VALIDATION_ERROR_TITLE, AppErrorCode
 
 
 @pytest.mark.asyncio

@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field, StrictStr, field_validator
 
-from pet.app.organizations import CreateOrganizationCmdIn, create_organization_cmd
+from pet.app.usecases.organizations import CreateOrganizationCmdIn, create_organization_cmd
 from pet.di.db import get_executor
 from pet.domain.uow import TransactionExecutor
 from pet.domain.value_objects import ORG_NAME_DESCRIPTION, validate_org_name

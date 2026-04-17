@@ -3,7 +3,7 @@ from uuid import UUID
 import pytest
 from pytest_mock import MockerFixture
 
-from pet.app.organizations import (
+from pet.app.usecases.organizations import (
     CreateOrganizationCmdIn,
     create_organization_cmd,
 )

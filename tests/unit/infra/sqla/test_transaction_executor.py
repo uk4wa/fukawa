@@ -39,7 +39,7 @@ async def test_transaction_executor_failed_raised_db_exception(
     class TranslatedError(Exception):
         pass
 
-    mocker.patch("pet.app.transaction_executor.DBError", FakeDBError)
+    mocker.patch("pet.app.transaction_executor.PersistenceError", FakeDBError)
     translated_exc = TranslatedError("translated_exc")
     translated_db_error = mocker.patch(
         "pet.app.transaction_executor.translate_db_error",
