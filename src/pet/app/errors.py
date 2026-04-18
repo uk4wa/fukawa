@@ -32,7 +32,7 @@ class OrganizationNameTakenError(AppError):
         )
 
 
-class ValidationError(AppError):
+class AppValidationError(AppError):
     def __init__(
         self,
         detail: str,

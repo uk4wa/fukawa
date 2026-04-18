@@ -48,7 +48,6 @@ minversion = "8.0"
 asyncio_mode = "auto"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
-pythonpath = ["src"]
 python_functions = ["test_*"]
 addopts = [
     "-ra",
