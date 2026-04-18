@@ -85,7 +85,10 @@ def test_determine_exc_maps_operational_error(mocker: MockerFixture):
 @pytest.mark.parametrize(
     ("error", "expected_title"),
     [
-        (InterfaceError(statement="statement", params={"name": "acme"}, orig=Exception()), "db_transient"),
+        (
+            InterfaceError(statement="statement", params={"name": "acme"}, orig=Exception()),
+            "db_transient",
+        ),
         (TimeoutError("pool timeout"), "db_transient"),
         (DisconnectionError(), "db_transient"),
     ],

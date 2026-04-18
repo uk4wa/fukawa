@@ -6,7 +6,9 @@ from starlette.types import Lifespan
 
 from pet.api.exceptions_handler import register_exception_handlers
 from pet.api.health import health
+from pet.api.middleware.http_logging import register_http_logging
 from pet.api.organizations import organizations
+from pet.config.logging import configure_logging
 from pet.config.settings import Settings, get_settings
 from pet.infra.sqla.db.connection import create_engine, create_session_maker
 
@@ -14,7 +16,7 @@ from pet.infra.sqla.db.connection import create_engine, create_session_maker
 def build_lifespan(settings: Settings) -> Lifespan[FastAPI]:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-
+        configure_logging(level=settings.log_level, log_format=settings.log_format)
         engine = create_engine(
             url=settings.dsn,
             echo=settings.engine.echo,
@@ -45,4 +47,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health)
     app.include_router(organizations)
     register_exception_handlers(app)
+    register_http_logging(app)
     return app

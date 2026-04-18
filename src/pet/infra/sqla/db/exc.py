@@ -5,9 +5,9 @@ from typing import Any
 from sqlalchemy.exc import (
     DBAPIError,
     DisconnectionError,
-    InvalidatePoolError,
     IntegrityError,
     InterfaceError,
+    InvalidatePoolError,
     OperationalError,
     SQLAlchemyError,
     TimeoutError,
