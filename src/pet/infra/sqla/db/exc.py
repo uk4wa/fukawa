@@ -2,7 +2,16 @@ import enum
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
+from sqlalchemy.exc import (
+    DBAPIError,
+    DisconnectionError,
+    InvalidatePoolError,
+    IntegrityError,
+    InterfaceError,
+    OperationalError,
+    SQLAlchemyError,
+    TimeoutError,
+)
 
 from pet.app.errors import (
     VALIDATION_ERROR_TITLE,
@@ -78,6 +87,12 @@ def pg_sqlstate_from_integrity(err: Exception) -> str | None:
     return getattr(orig, "sqlstate", None) or getattr(orig, "pgcode", None)
 
 
+def pg_sqlstate_from_dbapi(err: Exception) -> str | None:
+    orig = get_orig(err)
+
+    return getattr(orig, "sqlstate", None) or getattr(orig, "pgcode", None)
+
+
 def pg_constraint_name_from_integrity(err: Exception) -> str | None:
     return _read_pg_str_attr(err, "constraint_name")
 
@@ -125,6 +140,25 @@ def determine_exc(e: SQLAlchemyError) -> PersistenceError:
         return PersistenceError(
             kind=PersistenceErrorKind.OPERATIONAL,
             title="db_unavailable",
+            sqlstate=pg_sqlstate_from_dbapi(e),
+            retryable=True,
+            cause=e,
+        )
+
+    if isinstance(e, (InterfaceError, TimeoutError, DisconnectionError, InvalidatePoolError)):
+        return PersistenceError(
+            kind=PersistenceErrorKind.TRANSIENT,
+            title="db_transient",
+            sqlstate=pg_sqlstate_from_dbapi(e),
+            retryable=True,
+            cause=e,
+        )
+
+    if isinstance(e, DBAPIError) and e.connection_invalidated:
+        return PersistenceError(
+            kind=PersistenceErrorKind.TRANSIENT,
+            title="db_connection_invalidated",
+            sqlstate=pg_sqlstate_from_dbapi(e),
             retryable=True,
             cause=e,
         )

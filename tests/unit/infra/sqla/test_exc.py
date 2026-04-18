@@ -1,6 +1,14 @@
 import pytest
 from pytest_mock import MockerFixture
-from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
+from sqlalchemy.exc import (
+    DBAPIError,
+    DisconnectionError,
+    IntegrityError,
+    InterfaceError,
+    OperationalError,
+    SQLAlchemyError,
+    TimeoutError,
+)
 
 from pet.app.errors import (
     AppError,
@@ -71,6 +79,42 @@ def test_determine_exc_maps_operational_error(mocker: MockerFixture):
     assert result.title == "db_unavailable"
     assert result.retryable
     assert result.sqlstate is None
+    assert result.cause is error
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_title"),
+    [
+        (InterfaceError(statement="statement", params={"name": "acme"}, orig=Exception()), "db_transient"),
+        (TimeoutError("pool timeout"), "db_transient"),
+        (DisconnectionError(), "db_transient"),
+    ],
+)
+def test_determine_exc_maps_transient_sqla_errors(
+    error: SQLAlchemyError,
+    expected_title: str,
+) -> None:
+    result = determine_exc(error)
+
+    assert result.kind == PersistenceErrorKind.TRANSIENT
+    assert result.title == expected_title
+    assert result.retryable is True
+    assert result.cause is error
+
+
+def test_determine_exc_maps_connection_invalidated_dbapi_error() -> None:
+    error = DBAPIError(
+        statement="statement",
+        params={"name": "acme"},
+        orig=Exception(),
+        connection_invalidated=True,
+    )
+
+    result = determine_exc(error)
+
+    assert result.kind == PersistenceErrorKind.TRANSIENT
+    assert result.title == "db_connection_invalidated"
+    assert result.retryable is True
     assert result.cause is error
 
 
