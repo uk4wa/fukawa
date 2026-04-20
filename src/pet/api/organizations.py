@@ -2,11 +2,12 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
-from pydantic import BaseModel, StrictStr
+from pydantic import BaseModel, Field, StrictStr, field_validator
 
-from pet.app.organizations import CreateOrganizationCmdIn, create_organization_cmd
+from pet.app.usecases.organizations import CreateOrganizationCmdIn, create_organization_cmd
 from pet.di.db import get_executor
 from pet.domain.uow import TransactionExecutor
+from pet.domain.value_objects import ORG_NAME_DESCRIPTION, validate_org_name
 
 organizations = APIRouter(prefix="/orgs")
 
@@ -14,7 +15,15 @@ Executor = Annotated[TransactionExecutor, Depends(get_executor)]
 
 
 class CreateOrgDtoIn(BaseModel):
-    name: StrictStr
+    name: StrictStr = Field(
+        description=ORG_NAME_DESCRIPTION,
+        examples=["Acme", "Strasse"],
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        return validate_org_name(value)
 
 
 class PublicId(BaseModel):

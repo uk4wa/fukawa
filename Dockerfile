@@ -23,6 +23,7 @@ EXPOSE 8000
 
 CMD ["uv", "run", "--no-sync", "uvicorn" \
     ,"--factory", "pet.main:create_app" \
+    ,"--no-access-log" \
     ,"--port", "8000" \
     ,"--host", "0.0.0.0"]
 

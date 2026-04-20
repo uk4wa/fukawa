@@ -3,6 +3,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_api_healthz_returns_ok(client: AsyncClient) -> None:
     response = await client.get("/healthz")
 
@@ -11,6 +12,7 @@ async def test_api_healthz_returns_ok(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_api_readyz_returns_ok(client: AsyncClient) -> None:
     response = await client.get("/readyz")
 

@@ -1,39 +1,49 @@
 import pytest
 from pytest_mock import MockerFixture
-from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
+from sqlalchemy.exc import (
+    DBAPIError,
+    DisconnectionError,
+    IntegrityError,
+    InterfaceError,
+    OperationalError,
+    SQLAlchemyError,
+    TimeoutError,
+)
 
-from pet.app.exc import translate_db_error
-from pet.domain.exc import (
+from pet.app.errors import (
     AppError,
     Conflict,
-    DBError,
-    DBErrorKind,
     InternalError,
     ServiceUnavailable,
     UnprocessableEntity,
 )
 from pet.infra.sqla.db.exc import (
+    PersistenceError,
+    PersistenceErrorKind,
     determine_exc,
+    pg_column_name_from_integrity,
     pg_constraint_name_from_integrity,
     pg_sqlstate_from_integrity,
+    pg_table_name_from_integrity,
+    translate_db_error,
 )
 
 
 @pytest.mark.parametrize(
     ("sqlstate", "expected_kind"),
     [
-        ("23505", DBErrorKind.UNIQUE),
-        ("23503", DBErrorKind.FK),
-        ("23502", DBErrorKind.NOT_NULL),
-        ("23514", DBErrorKind.CHECK),
-        ("99999", DBErrorKind.UNKNOWN),
-        (None, DBErrorKind.UNKNOWN),
+        ("23505", PersistenceErrorKind.UNIQUE),
+        ("23503", PersistenceErrorKind.FK),
+        ("23502", PersistenceErrorKind.NOT_NULL),
+        ("23514", PersistenceErrorKind.CHECK),
+        ("99999", PersistenceErrorKind.UNKNOWN),
+        (None, PersistenceErrorKind.UNKNOWN),
     ],
 )
 def test_determine_exc_maps_integrity_sqlstate(
     mocker: MockerFixture,
     sqlstate: str | None,
-    expected_kind: DBErrorKind,
+    expected_kind: PersistenceErrorKind,
 ):
     error = IntegrityError(
         statement="statement",
@@ -53,6 +63,8 @@ def test_determine_exc_maps_integrity_sqlstate(
     assert not result.retryable
     assert result.sqlstate == sqlstate
     assert result.constraint_name is None
+    assert result.table_name is None
+    assert result.column_name is None
     assert result.cause is error
 
     pg_sqlstate_mock.assert_called_once_with(error)
@@ -63,10 +75,49 @@ def test_determine_exc_maps_operational_error(mocker: MockerFixture):
 
     result = determine_exc(error)
 
-    assert result.kind == DBErrorKind.OPERATIONAL
+    assert result.kind == PersistenceErrorKind.OPERATIONAL
     assert result.title == "db_unavailable"
     assert result.retryable
     assert result.sqlstate is None
+    assert result.cause is error
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_title"),
+    [
+        (
+            InterfaceError(statement="statement", params={"name": "acme"}, orig=Exception()),
+            "db_transient",
+        ),
+        (TimeoutError("pool timeout"), "db_transient"),
+        (DisconnectionError(), "db_transient"),
+    ],
+)
+def test_determine_exc_maps_transient_sqla_errors(
+    error: SQLAlchemyError,
+    expected_title: str,
+) -> None:
+    result = determine_exc(error)
+
+    assert result.kind == PersistenceErrorKind.TRANSIENT
+    assert result.title == expected_title
+    assert result.retryable is True
+    assert result.cause is error
+
+
+def test_determine_exc_maps_connection_invalidated_dbapi_error() -> None:
+    error = DBAPIError(
+        statement="statement",
+        params={"name": "acme"},
+        orig=Exception(),
+        connection_invalidated=True,
+    )
+
+    result = determine_exc(error)
+
+    assert result.kind == PersistenceErrorKind.TRANSIENT
+    assert result.title == "db_connection_invalidated"
+    assert result.retryable is True
     assert result.cause is error
 
 
@@ -75,8 +126,8 @@ def test_determine_exc_maps_unknown_sqla_error(mocker: MockerFixture):
 
     result = determine_exc(error)
 
-    assert isinstance(result, DBError)
-    assert result.kind == DBErrorKind.UNKNOWN
+    assert isinstance(result, PersistenceError)
+    assert result.kind == PersistenceErrorKind.UNKNOWN
     assert result.title == "db_error"
     assert result.retryable is False
     assert result.cause is error
@@ -109,9 +160,48 @@ def test_pg_constraint_name_from_integrity_reads_constraint_name(mocker: MockerF
     assert result == "uq_organizations_name_canonical"
 
 
+def test_pg_table_name_from_integrity_reads_table_name_from_diag(mocker: MockerFixture) -> None:
+    error = mocker.Mock()
+    error.orig = mocker.Mock(diag=mocker.Mock(table_name="organizations"))
+
+    result = pg_table_name_from_integrity(error)
+
+    assert result == "organizations"
+
+
+def test_pg_column_name_from_integrity_reads_column_name(mocker: MockerFixture) -> None:
+    error = mocker.Mock()
+    error.orig = mocker.Mock(column_name="name")
+
+    result = pg_column_name_from_integrity(error)
+
+    assert result == "name"
+
+
+def test_determine_exc_extracts_table_and_column_for_not_null(mocker: MockerFixture) -> None:
+    error = IntegrityError(
+        statement="statement",
+        params={"name": None},
+        orig=mocker.Mock(
+            sqlstate="23502",
+            constraint_name=None,
+            table_name="organizations",
+            column_name="name",
+        ),
+    )
+
+    result = determine_exc(error)
+
+    assert result.kind == PersistenceErrorKind.NOT_NULL
+    assert result.sqlstate == "23502"
+    assert result.constraint_name is None
+    assert result.table_name == "organizations"
+    assert result.column_name == "name"
+
+
 def test_translate_db_error_returns_conflict_for_unique(mocker: MockerFixture):
-    error = DBError(
-        kind=DBErrorKind.UNIQUE,
+    error = PersistenceError(
+        kind=PersistenceErrorKind.UNIQUE,
         title="error title",
         detail="error detail",
         constraint_name="uq_organizations_name_canonical",
@@ -126,8 +216,8 @@ def test_translate_db_error_returns_conflict_for_unique(mocker: MockerFixture):
 
 
 def test_translate_db_error_returns_internall_for_non_unique(mocker: MockerFixture):
-    error = DBError(
-        kind=DBErrorKind.OPERATIONAL,
+    error = PersistenceError(
+        kind=PersistenceErrorKind.OPERATIONAL,
         title="error title",
         detail="error detail",
     )
@@ -141,8 +231,8 @@ def test_translate_db_error_returns_internall_for_non_unique(mocker: MockerFixtu
 
 
 def test_translate_db_error_returns_generic_conflict_for_unknown_unique_constraint() -> None:
-    error = DBError(
-        kind=DBErrorKind.UNIQUE,
+    error = PersistenceError(
+        kind=PersistenceErrorKind.UNIQUE,
         constraint_name="uq_unknown_unique",
     )
 
@@ -152,32 +242,35 @@ def test_translate_db_error_returns_generic_conflict_for_unknown_unique_constrai
     assert result.code == "conflict"
 
 
-@pytest.mark.parametrize(
-    ("constraint_name", "expected_detail"),
-    [
-        ("ck_organizations_name_min_len", "Name is too short"),
-        ("ck_organizations_name_casefold_max_len", "Name is too long"),
-        ("ck_organizations_name_trimmed", "Name cannot be empty"),
-    ],
-)
-def test_translate_db_error_returns_validation_error_for_known_check_constraints(
-    constraint_name: str,
-    expected_detail: str,
-) -> None:
-    error = DBError(
-        kind=DBErrorKind.CHECK,
-        constraint_name=constraint_name,
+def test_translate_db_error_returns_generic_validation_error_for_check_constraint() -> None:
+    error = PersistenceError(
+        kind=PersistenceErrorKind.CHECK,
+        constraint_name="ck_organizations_name_casefold_max_len",
     )
 
     result = translate_db_error(error)
 
     assert isinstance(result, UnprocessableEntity)
     assert result.code == "validation_error"
-    assert result.detail == expected_detail
+    assert result.detail == "Stored value violates validation rules"
+
+
+def test_translate_db_error_returns_validation_error_for_not_null_column() -> None:
+    error = PersistenceError(
+        kind=PersistenceErrorKind.NOT_NULL,
+        table_name="organizations",
+        column_name="name",
+    )
+
+    result = translate_db_error(error)
+
+    assert isinstance(result, UnprocessableEntity)
+    assert result.code == "validation_error"
+    assert result.detail == 'Field "name" cannot be null'
 
 
 def test_translate_db_error_returns_internal_error_for_unknown_db_error() -> None:
-    error = DBError(kind=DBErrorKind.UNKNOWN)
+    error = PersistenceError(kind=PersistenceErrorKind.UNKNOWN)
 
     result = translate_db_error(error)
 

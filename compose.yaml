@@ -58,10 +58,10 @@ services:
           "-c",
           "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz')",
         ]
-      interval: 5s
+      interval: 30s
       timeout: 5s
-      retries: 12
-      start_period: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       db:
         condition: service_healthy

@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
+from pet.config.logging import LogFormat
+
 ROOT = Path(__file__).resolve().parents[3]
 _APP_NAME = "pet-uk4wa"
 
@@ -33,6 +35,9 @@ class SessionMakerSettings(BaseModel):
 
 class Settings(BaseSettings):
     app_name: str = _APP_NAME
+
+    log_format: LogFormat = Field(default="json")
+    log_level: str = Field(default="INFO")
 
     db: DatabaseSettings
     engine: EngineSettings = Field(default_factory=EngineSettings)

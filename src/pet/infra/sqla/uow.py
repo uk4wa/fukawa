@@ -51,6 +51,8 @@ class SQLAlchemyUnitOfWork:
                 await self._session.rollback()
         finally:
             await self.session.close()
+            self._session = None
+            self._orgs = None
 
     async def commit(self) -> None:
         try:
@@ -63,7 +65,11 @@ class SQLAlchemyUnitOfWork:
         await self.session.rollback()
 
     async def flush(self) -> None:
-        await self.session.flush()
+        try:
+            await self.session.flush()
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise determine_exc(e=e) from e
 
     async def refresh(self, obj: object, attrs: list[str] | None = None) -> None:
         await self.session.refresh(obj, attribute_names=attrs)

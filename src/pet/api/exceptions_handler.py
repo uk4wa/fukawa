@@ -1,28 +1,52 @@
-import logging
-from typing import Any, cast
+from typing import Any, assert_never, cast
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
 from starlette.status import (
+    HTTP_409_CONFLICT,
     HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_503_SERVICE_UNAVAILABLE,
 )
 
-from pet.app.exc import translate_db_error
-from pet.domain.exc import (
-    AppError,
-    DBError,
-)
+from pet.app.errors import VALIDATION_ERROR_TITLE, AppError, AppErrorCode
+from pet.config.logging import get_logger
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 
-logger = logging.getLogger("app.errors")
+
+def get_http_status_for_error(code: AppErrorCode) -> int:
+    match code:
+        case AppErrorCode.CONFLICT | AppErrorCode.ORGANIZATION_NAME_TAKEN:
+            return HTTP_409_CONFLICT
+        case AppErrorCode.VALIDATION:
+            return HTTP_422_UNPROCESSABLE_CONTENT
+        case AppErrorCode.SERVICE_UNAVAILABLE:
+            return HTTP_503_SERVICE_UNAVAILABLE
+        case AppErrorCode.INTERNAL_ERROR:
+            return HTTP_500_INTERNAL_SERVER_ERROR
+        case _:
+            assert_never(code)
+
+
+logger = get_logger(__name__)
 
 
 def _request_id(r: Request) -> str | None:
     return getattr(r.state, "request_id", None) or r.headers.get("x-request-id")
+
+
+def _jsonable_validation_errors(validation_error: RequestValidationError) -> list[dict[str, Any]]:
+    return cast(
+        list[dict[str, Any]],
+        jsonable_encoder(
+            validation_error.errors(),
+            custom_encoder={Exception: str},
+        ),
+    )
 
 
 def problem(
@@ -63,26 +87,22 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def app_error_handler(r: Request, exc: Exception) -> JSONResponse:
         app_error = cast(AppError, exc)
         rid = _request_id(r)
-        return problem(
-            title=app_error.title,
-            status=app_error.status_code,
-            detail=app_error.detail,
-            instance=(r.url.path),
-            code=app_error.code,
+
+        status_code = get_http_status_for_error(app_error.code)
+        log = logger.error if status_code >= HTTP_500_INTERNAL_SERVER_ERROR else logger.warning
+        log(
+            "app_error_rendered",
+            error_code=app_error.code,
+            status_code=status_code,
             request_id=rid,
         )
 
-    @app.exception_handler(DBError)
-    async def db_error_handler(request: Request, exc: Exception) -> JSONResponse:
-        db_error = cast(DBError, exc)
-        translated = translate_db_error(db_error)
-        rid = _request_id(request)
         return problem(
-            status=translated.status_code,
-            title=translated.title,
-            detail=translated.detail,
-            code=translated.code,
-            instance=str(request.url.path),
+            title=app_error.title,
+            status=status_code,
+            detail=app_error.detail,
+            instance=(r.url.path),
+            code=app_error.code,
             request_id=rid,
         )
 
@@ -90,6 +110,16 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def http_error_handler(r: Request, exc: Exception) -> JSONResponse:
         http_error = cast(StarletteHTTPException, exc)
         rid = _request_id(r)
+        log = (
+            logger.error
+            if http_error.status_code >= HTTP_500_INTERNAL_SERVER_ERROR
+            else logger.warning
+        )
+        log(
+            "http_exception_rendered",
+            status_code=http_error.status_code,
+            request_id=rid,
+        )
 
         return problem(
             title="HTTPException",
@@ -105,13 +135,28 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
         validation_error = cast(RequestValidationError, exc)
         rid = _request_id(request)
+        errors = _jsonable_validation_errors(validation_error)
+        detail = "Request validation failed"
+
+        if len(errors) == 1:
+            error = errors[0]
+            original_error = error.get("ctx", {}).get("error")
+            if original_error is not None:
+                detail = str(original_error)
+
+        logger.warning(
+            "request_validation_failed",
+            status_code=HTTP_422_UNPROCESSABLE_CONTENT,
+            errors_count=len(errors),
+            request_id=rid,
+        )
 
         return problem(
             status=HTTP_422_UNPROCESSABLE_CONTENT,
-            title="Validation Error",
-            detail="Request validation failed",
-            code="validation_error",
-            errors=validation_error.errors(),
+            title=VALIDATION_ERROR_TITLE,
+            detail=detail,
+            code=AppErrorCode.VALIDATION,
+            errors=errors,
             instance=str(request.url.path),
             request_id=rid,
         )
@@ -119,7 +164,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
         rid = _request_id(request)
-        logger.exception("Unhandled error", extra={"path": request.url.path, "request_id": rid})
+        logger.exception(
+            "unhandled_exception",
+            path=request.url.path,
+            request_id=rid,
+        )
         return problem(
             status=HTTP_500_INTERNAL_SERVER_ERROR,
             title="Internal Server Error",

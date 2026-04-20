@@ -8,6 +8,9 @@ wheels/
 .venv
 .ruff_cache/
 .env
+scripts/
+python-files.txt
+architecture.txt
 
 .vscode
 .pytest_cache/
