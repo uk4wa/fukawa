@@ -1,20 +1,10 @@
 from __future__ import annotations
 
-import logging
 import logging.config
 from typing import Final, Literal
 
 import structlog
 from structlog.typing import Processor
-
-
-class EndpointFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool | logging.LogRecord:
-        return record.getMessage().find("/readyz") == -1
-
-
-logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
-
 
 type LogFormat = Literal["json", "console"]
 

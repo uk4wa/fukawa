@@ -15,6 +15,8 @@ async def test_transaction_executor_passed(
     executor: TransactionExecutor,
 ) -> None:
     handler = mocker.AsyncMock(return_value="ok")
+    info_log = mocker.patch("pet.app.transaction_executor.logger.info")
+    debug_log = mocker.patch("pet.app.transaction_executor.logger.debug")
 
     result = await executor.run(handler, 123, q="123str")
 
@@ -24,6 +26,10 @@ async def test_transaction_executor_passed(
     handler.assert_awaited_once_with(uow_mock, 123, q="123str")
     uow_mock.commit.assert_awaited_once()
     uow_mock.__aexit__.assert_awaited_once_with(None, None, None)
+    debug_log.assert_called_once()
+    info_log.assert_called_once()
+    assert info_log.call_args.args == ("transaction_committed",)
+    assert info_log.call_args.kwargs["use_case_handler"] == handler.__name__
 
 
 @pytest.mark.asyncio
@@ -46,6 +52,7 @@ async def test_transaction_executor_failed_raised_db_exception(
         return_value=translated_exc,
         autospec=True,
     )
+    warning_log = mocker.patch("pet.app.transaction_executor.logger.warning")
     fake_db_error = FakeDBError("db_exc")
     handler = mocker.AsyncMock(side_effect=fake_db_error, spec=True)
 
@@ -59,6 +66,8 @@ async def test_transaction_executor_failed_raised_db_exception(
     uow_mock.commit.assert_not_awaited()
 
     uow_mock.__aexit__.assert_awaited_once_with(TranslatedError, translated_exc, ANY)
+    warning_log.assert_called_once()
+    assert warning_log.call_args.args == ("transaction_db_error",)
 
 
 @pytest.mark.asyncio
@@ -77,6 +86,7 @@ async def test_transaction_executor_failed_raises_translated_validation_exceptio
         return_value=translated_exc,
         autospec=True,
     )
+    warning_log = mocker.patch("pet.app.transaction_executor.logger.warning")
     validation_error = ValidationError("invalid organization name", cause="name")
     handler = mocker.AsyncMock(side_effect=validation_error, spec=True)
 
@@ -89,6 +99,8 @@ async def test_transaction_executor_failed_raises_translated_validation_exceptio
     uow_mock.commit.assert_not_awaited()
     translate_validation_error.assert_called_once_with(validation_error)
     uow_mock.__aexit__.assert_awaited_once_with(TranslatedError, translated_exc, ANY)
+    warning_log.assert_called_once()
+    assert warning_log.call_args.args == ("transaction_validation_failed",)
 
 
 @pytest.mark.asyncio
@@ -112,6 +124,7 @@ async def test_transaction_executor_failed_raise_any_exception(
         "pet.app.transaction_executor.translate_domain_validation_error",
         autospec=True,
     )
+    exception_log = mocker.patch("pet.app.transaction_executor.logger.exception")
 
     with pytest.raises(type(exception), match="err") as exc_info:
         await executor.run(handler, 1)
@@ -125,3 +138,5 @@ async def test_transaction_executor_failed_raise_any_exception(
 
     uow_mock.__aenter__.assert_awaited_once()
     uow_mock.__aexit__.assert_awaited_once_with(type(exception), exception, ANY)
+    exception_log.assert_called_once()
+    assert exception_log.call_args.args == ("transaction_failed",)

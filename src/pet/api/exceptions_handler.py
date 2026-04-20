@@ -1,4 +1,3 @@
-import logging
 from typing import Any, assert_never, cast
 
 from fastapi import FastAPI, Request
@@ -14,6 +13,7 @@ from starlette.status import (
 )
 
 from pet.app.errors import VALIDATION_ERROR_TITLE, AppError, AppErrorCode
+from pet.config.logging import get_logger
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 
@@ -32,7 +32,7 @@ def get_http_status_for_error(code: AppErrorCode) -> int:
             assert_never(code)
 
 
-logger = logging.getLogger("app.errors")
+logger = get_logger(__name__)
 
 
 def _request_id(r: Request) -> str | None:
@@ -89,6 +89,13 @@ def register_exception_handlers(app: FastAPI) -> None:
         rid = _request_id(r)
 
         status_code = get_http_status_for_error(app_error.code)
+        log = logger.error if status_code >= HTTP_500_INTERNAL_SERVER_ERROR else logger.warning
+        log(
+            "app_error_rendered",
+            error_code=app_error.code,
+            status_code=status_code,
+            request_id=rid,
+        )
 
         return problem(
             title=app_error.title,
@@ -103,6 +110,16 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def http_error_handler(r: Request, exc: Exception) -> JSONResponse:
         http_error = cast(StarletteHTTPException, exc)
         rid = _request_id(r)
+        log = (
+            logger.error
+            if http_error.status_code >= HTTP_500_INTERNAL_SERVER_ERROR
+            else logger.warning
+        )
+        log(
+            "http_exception_rendered",
+            status_code=http_error.status_code,
+            request_id=rid,
+        )
 
         return problem(
             title="HTTPException",
@@ -127,6 +144,13 @@ def register_exception_handlers(app: FastAPI) -> None:
             if original_error is not None:
                 detail = str(original_error)
 
+        logger.warning(
+            "request_validation_failed",
+            status_code=HTTP_422_UNPROCESSABLE_CONTENT,
+            errors_count=len(errors),
+            request_id=rid,
+        )
+
         return problem(
             status=HTTP_422_UNPROCESSABLE_CONTENT,
             title=VALIDATION_ERROR_TITLE,
@@ -140,7 +164,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
         rid = _request_id(request)
-        logger.exception("Unhandled error", extra={"path": request.url.path, "request_id": rid})
+        logger.exception(
+            "unhandled_exception",
+            path=request.url.path,
+            request_id=rid,
+        )
         return problem(
             status=HTTP_500_INTERNAL_SERVER_ERROR,
             title="Internal Server Error",
