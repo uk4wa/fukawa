@@ -1,3 +1,4 @@
+from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import (
 
 
 def create_engine(
-    url: str,
+    url: str | URL,
     echo: bool = False,
     pool_size: int = 10,
     max_overflow: int = 20,

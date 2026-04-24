@@ -6,12 +6,12 @@ from pydantic import BaseModel, Field, StrictStr, field_validator
 
 from pet.app.usecases.organizations import CreateOrganizationCmdIn, create_organization_cmd
 from pet.di.db import get_executor
-from pet.domain.uow import TransactionExecutor
+from pet.domain.uow import TransactionExecutorProtocol
 from pet.domain.value_objects import ORG_NAME_DESCRIPTION, validate_org_name
 
 organizations = APIRouter(prefix="/orgs")
 
-Executor = Annotated[TransactionExecutor, Depends(get_executor)]
+Executor = Annotated[TransactionExecutorProtocol, Depends(get_executor)]
 
 
 class CreateOrgDtoIn(BaseModel):

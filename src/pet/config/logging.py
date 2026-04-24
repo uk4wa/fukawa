@@ -28,15 +28,13 @@ def _normalize_log_level(level: str) -> str:
 def configure_logging(*, level: str = "INFO", log_format: LogFormat = "json") -> None:
     normalized_level = _normalize_log_level(level)
 
-    timestamper = structlog.processors.TimeStamper(fmt="iso", utc=True)
-
     shared_processors: tuple[Processor, ...] = (
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.filter_by_level,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),
-        timestamper,
+        structlog.processors.TimeStamper(fmt="iso", utc=True),
         structlog.processors.StackInfoRenderer(),
     )
 

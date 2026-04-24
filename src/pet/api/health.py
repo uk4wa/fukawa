@@ -1,3 +1,5 @@
+from typing import Final
+
 import sqlalchemy as sa
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
@@ -10,6 +12,9 @@ class HealthStatus(BaseModel):
     status: str
 
 
+DB_OPERATION_ERRORS: Final = (SQLAlchemyError, OSError)
+
+
 @health.get("/healthz", response_model=HealthStatus, include_in_schema=False)
 async def healthz() -> HealthStatus:
     return HealthStatus(status="ok")
@@ -20,10 +25,10 @@ async def readyz(request: Request) -> HealthStatus:
     try:
         async with request.app.state.engine.connect() as conn:
             await conn.execute(sa.text("SELECT 1"))
-    except SQLAlchemyError as exc:
+    except DB_OPERATION_ERRORS as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Service is not ready",
-        ) from exc
+        ) from e
 
     return HealthStatus(status="ok")

@@ -2,6 +2,8 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import Concatenate
 
+import structlog
+
 from pet.app.error_mappers import translate_domain_validation_error
 from pet.config.logging import get_logger
 from pet.domain.exc import ValidationError
@@ -33,15 +35,20 @@ class TransactionExecutor:
         handler_name = _handler_name(handler)
         logger.debug("transaction_started", use_case_handler=handler_name)
 
+        structlog.contextvars.bind_contextvars(use_case_handler=handler_name)
+
         async with self._uow_factory() as uow:
             try:
                 result = await handler(uow, *args, **kwargs)
+
                 await uow.commit()
+
                 logger.info(
                     "transaction_committed",
                     use_case_handler=handler_name,
                     duration_ms=_duration_ms(started_at),
                 )
+
                 return result
             except PersistenceError as e:
                 logger.warning(
