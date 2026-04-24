@@ -38,9 +38,7 @@ jobs:
                     - 5432:5432
                 options: >-
                     --health-cmd "pg_isready -U postgres -d pet_ci"
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
+                    --health-interval 10s --health-timeout 5s --health-retries 5
         env:
             DB__DRIVER: postgresql+asyncpg
             DB__HOST: 127.0.0.1
@@ -106,6 +104,8 @@ jobs:
         timeout-minutes: 15
         env:
             APP_NAME: pet-uk4wa
+            LOG_FORMAT: json
+            LOG_LEVEL: INFO
             DB__DRIVER: postgresql+asyncpg
             DB__PORT: "5432"
             DB__NAME: pet_compose_ci
@@ -126,7 +126,9 @@ jobs:
               run: docker compose ps
 
             - name: Smoke check application
-              run: curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-connrefused --retry-all-errors http://127.0.0.1:8000/readyz
+              run: curl --fail --silent --show-error --retry 12 --retry-delay 5
+                  --retry-connrefused --retry-all-errors
+                  http://127.0.0.1:8000/readyz
 
             - name: Capture Compose logs
               if: always()
