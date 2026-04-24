@@ -21,10 +21,10 @@ services:
       context: .
       dockerfile: Dockerfile
       target: migrate
-    env_file:
-      - .env
     environment:
       APP_NAME: $APP_NAME
+      LOG_FORMAT: $LOG_FORMAT
+      LOG_LEVEL: $LOG_LEVEL
       DB__HOST: db
       DB__DRIVER: $DB__DRIVER
       DB__PORT: $DB__PORT
@@ -43,10 +43,10 @@ services:
       target: runtime
     ports:
       - "8000:8000"
-    env_file:
-      - .env
     environment:
       APP_NAME: $APP_NAME
+      LOG_FORMAT: $LOG_FORMAT
+      LOG_LEVEL: $LOG_LEVEL
       DB__HOST: db
       DB__DRIVER: $DB__DRIVER
       DB__PORT: $DB__PORT
