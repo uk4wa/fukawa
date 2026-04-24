@@ -32,15 +32,19 @@ async def create_organization_cmd(
         use_case="create_organization",
         organization_name_length=len(cmd.name),
     )
-    logger.info("organization_create_started")
+    logger.debug("organization_create_started")
 
     public_id = uuid_gen()
+
     structlog.contextvars.bind_contextvars(organization_public_id=str(public_id))
+
     domain_org = Organization.create(
         public_id=PublicIdVO.create(public_id),
         name=NameVO.create(cmd.name),
     )
+
     uow.orgs.create(domain_org)
-    logger.info("organization_create_staged")
+
+    logger.debug("organization_create_staged")
 
     return PublicId(public_id)

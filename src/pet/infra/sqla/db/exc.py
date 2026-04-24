@@ -105,7 +105,10 @@ def pg_column_name_from_integrity(err: Exception) -> str | None:
     return _read_pg_str_attr(err, "column_name")
 
 
-def determine_exc(e: SQLAlchemyError) -> PersistenceError:
+type DBDriverError = SQLAlchemyError | OSError
+
+
+def determine_exc(e: DBDriverError) -> PersistenceError:
 
     if isinstance(e, IntegrityError):
         kind_map: dict[str, PersistenceErrorKind] = {
@@ -159,6 +162,14 @@ def determine_exc(e: SQLAlchemyError) -> PersistenceError:
             kind=PersistenceErrorKind.TRANSIENT,
             title="db_connection_invalidated",
             sqlstate=pg_sqlstate_from_dbapi(e),
+            retryable=True,
+            cause=e,
+        )
+
+    if isinstance(e, OSError):
+        return PersistenceError(
+            kind=PersistenceErrorKind.OPERATIONAL,
+            title="db_unavailable",
             retryable=True,
             cause=e,
         )

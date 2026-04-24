@@ -54,14 +54,10 @@ async def test_http_logging_logs_4xx_as_warning(mocker) -> None:
     async def create_org() -> Response:
         return Response(status_code=409)
 
-    warning_mock = mocker.patch("pet.api.middleware.http_logging.logger.warning")
     info_mock = mocker.patch("pet.api.middleware.http_logging.logger.info")
-    error_mock = mocker.patch("pet.api.middleware.http_logging.logger.error")
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/orgs/")
 
     assert response.status_code == 409
-    warning_mock.assert_called_once()
-    info_mock.assert_not_called()
-    error_mock.assert_not_called()
+    info_mock.assert_called_once()

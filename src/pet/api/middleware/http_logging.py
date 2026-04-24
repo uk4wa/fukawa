@@ -48,17 +48,12 @@ def register_http_logging(app: FastAPI) -> None:
             if request.url.path in SKIP_LOG_PATHS:
                 return response
 
-            log = logger.info
-            if response.status_code >= 500:
-                log = logger.error
-            elif response.status_code >= 400:
-                log = logger.warning
-
-            log(
+            logger.info(
                 "http_request_finished",
                 status_code=response.status_code,
                 duration_ms=duration_ms,
             )
+
             return response
         finally:
             structlog.contextvars.clear_contextvars()
