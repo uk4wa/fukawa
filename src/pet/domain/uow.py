@@ -23,7 +23,7 @@ class UnitOfWork(Protocol):
     async def refresh(self, obj: object, attrs: list[str] | None = None) -> None: ...
 
 
-class TransactionExecutor(Protocol):
+class TransactionExecutorProtocol(Protocol):
     _uow_factory: Callable[[], UnitOfWork]
 
     async def run[T, **P](

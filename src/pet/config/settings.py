@@ -47,7 +47,7 @@ class Settings(BaseSettings):
         super().__init__(**values)
 
     @cached_property
-    def dsn(self) -> str:
+    def db_url(self) -> URL:
         return URL.create(
             drivername=self.db.driver,
             username=self.db.user,
@@ -55,7 +55,15 @@ class Settings(BaseSettings):
             host=self.db.host,
             port=self.db.port,
             database=self.db.name,
-        ).render_as_string(hide_password=False)
+        )
+
+    @cached_property
+    def db_dsn(self) -> str:
+        return self.db_url.render_as_string(hide_password=False)
+
+    @cached_property
+    def safe_db_dsn(self) -> str:
+        return self.db_url.render_as_string(hide_password=True)
 
     model_config = SettingsConfigDict(
         env_file=ROOT / ".env",
