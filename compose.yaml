@@ -21,6 +21,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: migrate
+    env_file:
+      - .env
     environment:
       APP_NAME: ${APP_NAME:-pet-uk4wa}
       LOG_FORMAT: ${LOG_FORMAT:-json}
@@ -43,6 +45,8 @@ services:
       target: runtime
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
       APP_NAME: ${APP_NAME:-pet-uk4wa}
       LOG_FORMAT: ${LOG_FORMAT:-json}
