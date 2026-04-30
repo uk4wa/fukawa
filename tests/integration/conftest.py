@@ -12,8 +12,31 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from testcontainers.postgres import PostgresContainer  # type: ignore
 
-from pet.config.settings import DatabaseSettings, Settings
+from pet.app.auth.exc import InvalidToken
+from pet.app.auth.verifier import TokenVerifier
+from pet.config.settings import DatabaseSettings, KeycloakSettings, Settings
+from pet.domain.auth.principal import Principal
 from pet.main import create_app
+
+TEST_TOKEN = "integration-test-token"
+TEST_CLIENT_ID = "pet-backend"
+
+
+class _AllScopesVerifier(TokenVerifier):
+    """Returns a principal with every scope/role the integration suite needs."""
+
+    _principal = Principal(
+        subject="integration-test-user",
+        username="integration",
+        email="integration@test.local",
+        scopes=frozenset({"organizations:write", "organizations:read"}),
+        realm_roles=frozenset({"admin", "user"}),
+    )
+
+    async def verify(self, raw_token: str) -> Principal:
+        if raw_token != TEST_TOKEN:
+            raise InvalidToken("Unknown integration test token")
+        return self._principal
 
 
 @pytest.fixture(scope="session")
@@ -46,6 +69,11 @@ def test_settings(
             password=SecretStr(postgres_container.password),
             name=postgres_container.dbname,
         ),
+        keycloak=KeycloakSettings(
+            issuer_url="http://test/realms/pet",  # type: ignore[arg-type]
+            client_id=TEST_CLIENT_ID,
+            audience=[TEST_CLIENT_ID],
+        ),
     )
 
 
@@ -53,7 +81,10 @@ def test_settings(
 async def app(
     test_settings: Settings,
 ) -> AsyncIterator[FastAPI]:
-    app_instance = create_app(settings=test_settings)
+    app_instance = create_app(
+        settings=test_settings,
+        token_verifier=_AllScopesVerifier(),
+    )
     async with LifespanManager(app_instance):
         yield app_instance
 
@@ -65,6 +96,7 @@ async def client(
     async with AsyncClient(
         transport=ASGITransport(app=app, raise_app_exceptions=False),
         base_url="http://test",
+        headers={"Authorization": f"Bearer {TEST_TOKEN}"},
     ) as http_client:
         yield http_client
 

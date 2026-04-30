@@ -4,17 +4,19 @@ services:
   db:
     image: postgres:18
     environment:
-      - POSTGRES_DB=$DB__NAME
-      - POSTGRES_USER=$DB__USER
-      - POSTGRES_PASSWORD=$DB__PASSWORD
+      - POSTGRES_DB=${DB__NAME}
+      - POSTGRES_USER=${DB__USER}
+      - POSTGRES_PASSWORD=${DB__PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $DB__USER -d $DB__NAME"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB__USER} -d ${DB__NAME}" ]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql
+    networks:
+      - app-net
 
   migrate:
     build:
@@ -35,9 +37,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - app-net
 
   app:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
       target: runtime
@@ -53,15 +57,17 @@ services:
       DB__NAME: ${DB__NAME}
       DB__USER: ${DB__USER}
       DB__PASSWORD: ${DB__PASSWORD}
+      KEYCLOAK__ISSUER_URL: ${KEYCLOAK__ISSUER_URL:-http://localhost:8080/realms/ukawa-pet}
+      KEYCLOAK__INTERNAL_ISSUER_URL: ${KEYCLOAK__INTERNAL_ISSUER_URL:-http://keycloak:8080/realms/ukawa-pet}
+      KEYCLOAK__CLIENT_ID: ${KEYCLOAK__CLIENT_ID:-pet-backend}
+      KEYCLOAK__AUDIENCE: '${KEYCLOAK__AUDIENCE:-["pet-backend"]}'
+      KEYCLOAK__ALLOWED_ALGORITHMS: '${KEYCLOAK__ALLOWED_ALGORITHMS:-["RS256"]}'
+      KEYCLOAK__JWKS_CACHE_TTL_SECONDS: ${KEYCLOAK__JWKS_CACHE_TTL_SECONDS:-300}
+      KEYCLOAK__LEEWAY_SECONDS: ${KEYCLOAK__LEEWAY_SECONDS:-30}
+      KEYCLOAK__HTTP_TIMEOUT_SECONDS: ${KEYCLOAK__HTTP_TIMEOUT_SECONDS:-5}
     restart: unless-stopped
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz')",
-        ]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz')" ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -71,6 +77,69 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+    networks:
+      - app-net
+
+  postgres-kc:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${KC_DB_NAME:-keycloak}
+      POSTGRES_USER: ${KC_DB_USER:-keycloak}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:?KC_DB_PASSWORD is required}
+    volumes:
+      - postgres_kc_data:/var/lib/postgresql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${KC_DB_USER:-keycloak} -d ${KC_DB_NAME:-keycloak}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "127.0.0.1:5433:5432"
+    networks:
+      - app-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6.1
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?KC_ADMIN_PASSWORD is required}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-kc:5432/${KC_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?KC_DB_PASSWORD is required}
+      KC_DB_SCHEMA: public
+      KC_HOSTNAME: ${KC_HOSTNAME:-localhost}
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_LOG_LEVEL: INFO
+    volumes:
+      - ./keycloak/ukawa-pet-realm.json:/opt/keycloak/data/import/ukawa-pet-realm.json:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres-kc:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c '</dev/tcp/localhost/9000'" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
 
 volumes:
   pgdata:
+  postgres_kc_data:
