@@ -2,7 +2,7 @@ FROM python:3.13-slim AS base
 
 WORKDIR /app
 
-COPY --from=ghcr.io/astral-sh/uv:0.10.7 /uv /uvx /bin/
+COPY --from=astral/uv:0.10.7 /uv /uvx /bin/
 
 COPY pyproject.toml uv.lock README.md /app/
 

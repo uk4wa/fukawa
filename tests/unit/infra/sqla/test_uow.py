@@ -117,11 +117,6 @@ async def test_flush_error(mocker: MockerFixture) -> None:
         autospec=True,
     )
 
-    # rollback_after_failure_mock = mocker.patch(
-    #     "pet.infra.sqla.uow.SQLAlchemyUnitOfWork._rollback_after_failure",
-    #     new_callable=mocker.AsyncMock,
-    # )
-
     async with uow:
         with pytest.raises(PersistenceError) as exc_info:
             await uow.flush()

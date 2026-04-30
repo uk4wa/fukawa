@@ -24,8 +24,6 @@ class UnitOfWork(Protocol):
 
 
 class TransactionExecutorProtocol(Protocol):
-    _uow_factory: Callable[[], UnitOfWork]
-
     async def run[T, **P](
         self,
         handler: Callable[Concatenate[UnitOfWork, P], Awaitable[T]],

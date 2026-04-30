@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import ANY, AsyncMock, Mock
 
 import pytest
@@ -40,7 +41,10 @@ async def test_transaction_executor_failed_raised_db_exception(
     executor: TransactionExecutor,
 ) -> None:
     class FakeDBError(Exception):
-        pass
+        kind: Any
+        sqlstate: Any = None
+        constraint_name: Any = None
+        retryable: Any = None
 
     class TranslatedError(Exception):
         pass
@@ -54,6 +58,7 @@ async def test_transaction_executor_failed_raised_db_exception(
     )
     warning_log = mocker.patch("pet.app.transaction_executor.logger.warning")
     fake_db_error = FakeDBError("db_exc")
+    fake_db_error.kind = mocker.Mock(value="fake_kind")
     handler = mocker.AsyncMock(side_effect=fake_db_error, spec=True)
 
     with pytest.raises(TranslatedError) as exc_info:

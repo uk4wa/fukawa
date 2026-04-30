@@ -16,6 +16,8 @@ dependencies = [
     "uvicorn>=0.41.0",
     "structlog>=25.5.0",
     "colorama>=0.4.6",
+    "pyjwt[crypto]>=2.10.1",
+    "httpx>=0.28.1",
 ]
 
 [tool.setuptools]
@@ -64,7 +66,7 @@ markers = ["unit: isolated fast tests", "integration: tests with real infra"]
 
 [tool.coverage.run]
 branch = true
-source_pkgs = ["pet"]
+source = ["src/pet"]
 omit = ["*/__init__.py"]
 
 [tool.coverage.report]
@@ -97,6 +99,7 @@ indent-style = "space"
 include = ["src"]
 extraPaths = ["src"]
 pythonVersion = "3.13"
+strict = ["true"]
 venvPath = "."
 venv = ".venv"
 typeCheckingMode = "standard"
