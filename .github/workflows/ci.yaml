@@ -101,7 +101,7 @@ jobs:
         name: Docker Compose Smoke Test
         needs: test
         runs-on: ubuntu-latest
-        timeout-minutes: 15
+        timeout-minutes: 20
         env:
             APP_NAME: pet-uk4wa
             LOG_FORMAT: json
@@ -111,6 +111,11 @@ jobs:
             DB__NAME: pet_compose_ci
             DB__USER: postgres
             DB__PASSWORD: postgres
+            KC_ADMIN_USER: admin
+            KC_ADMIN_PASSWORD: admin
+            KC_DB_NAME: keycloak_db
+            KC_DB_USER: keycloak_user
+            KC_DB_PASSWORD: keycloak_password
 
         steps:
             - name: Checkout repository
@@ -120,7 +125,7 @@ jobs:
               run: docker compose config
 
             - name: Up Docker Compose
-              run: docker compose up -d --build --wait --wait-timeout 120
+              run: docker compose up -d --build --wait --wait-timeout 240
 
             - name: Show Compose status
               run: docker compose ps

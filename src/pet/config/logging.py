@@ -30,12 +30,16 @@ def configure_logging(*, level: str = "INFO", log_format: LogFormat = "json") ->
 
     shared_processors: tuple[Processor, ...] = (
         structlog.contextvars.merge_contextvars,
-        structlog.stdlib.filter_by_level,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         structlog.processors.StackInfoRenderer(),
+    )
+    structlog_processors: tuple[Processor, ...] = (
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.filter_by_level,
+        *shared_processors[1:],
     )
 
     formatter_processors: tuple[Processor, ...]
@@ -79,7 +83,7 @@ def configure_logging(*, level: str = "INFO", log_format: LogFormat = "json") ->
 
     structlog.configure(
         processors=[
-            *shared_processors,
+            *structlog_processors,
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
         logger_factory=structlog.stdlib.LoggerFactory(),
@@ -88,5 +92,5 @@ def configure_logging(*, level: str = "INFO", log_format: LogFormat = "json") ->
     )
 
 
-def get_logger(name: str, **kwargs: dict[str, str]) -> structlog.stdlib.BoundLogger:
+def get_logger(name: str, **kwargs: str) -> structlog.stdlib.BoundLogger:
     return structlog.stdlib.get_logger(name, **kwargs)

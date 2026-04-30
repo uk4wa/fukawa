@@ -55,7 +55,7 @@ class TransactionExecutor:
                     "transaction_db_error",
                     use_case_handler=handler_name,
                     duration_ms=_duration_ms(started_at),
-                    persistence_error_kind=getattr(e, "kind", None),
+                    persistence_error_kind=e.kind.value,
                     sqlstate=getattr(e, "sqlstate", None),
                     constraint_name=getattr(e, "constraint_name", None),
                     retryable=getattr(e, "retryable", None),

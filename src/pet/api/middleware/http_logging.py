@@ -39,14 +39,15 @@ def register_http_logging(app: FastAPI) -> None:
 
         try:
             response = await call_next(request)
-        except Exception:
-            raise
-        else:
             duration_ms = get_duration_ms(started_at)
             response.headers["X-Request-ID"] = request_id
 
-            if request.url.path in SKIP_LOG_PATHS:
-                return response
+            if request.url.path not in SKIP_LOG_PATHS:
+                logger.info(
+                    "http_request_finished",
+                    status_code=response.status_code,
+                    duration_ms=duration_ms,
+                )
 
             logger.info(
                 "http_request_finished",
