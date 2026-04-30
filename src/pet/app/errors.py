@@ -21,94 +21,17 @@ class AppError(Exception):
     extra: dict[str, Any] | None = None
 
 
-class OrganizationNameTakenError(AppError):
-    def __init__(
-        self,
-        detail: str = "Organization name is already taken",
-        extra: dict[str, Any] | None = None,
-    ):
-        super().__init__(
-            title="Conflict", code=AppErrorCode.ORGANIZATION_NAME_TAKEN, detail=detail, extra=extra
-        )
-
-
-class AppValidationError(AppError):
-    def __init__(
-        self,
-        detail: str,
-        extra: dict | None = None,
-    ):
-        super().__init__(
-            title="Validation Error",
-            code=AppErrorCode.VALIDATION,
-            detail=detail,
-            extra=extra,
-        )
-
-
 class Conflict(AppError):
-    def __init__(
-        self,
-        title: str,
-        code: AppErrorCode,
-        detail: str | None = None,
-        *,
-        extra: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(
-            title=title,
-            code=code,
-            detail=detail,
-            extra=extra,
-        )
+    pass
 
 
 class InternalError(AppError):
-    def __init__(
-        self,
-        title: str,
-        code: AppErrorCode,
-        detail: str | None = None,
-        *,
-        extra: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(
-            title=title,
-            code=code,
-            detail=detail,
-            extra=extra,
-        )
+    pass
 
 
 class ServiceUnavailable(AppError):
-    def __init__(
-        self,
-        title: str,
-        code: AppErrorCode,
-        detail: str | None = None,
-        *,
-        extra: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(
-            title=title,
-            code=code,
-            detail=detail,
-            extra=extra,
-        )
+    pass
 
 
 class UnprocessableEntity(AppError):
-    def __init__(
-        self,
-        title: str,
-        code: AppErrorCode,
-        detail: str | None = None,
-        *,
-        extra: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(
-            title=title,
-            code=code,
-            detail=detail,
-            extra=extra,
-        )
+    pass

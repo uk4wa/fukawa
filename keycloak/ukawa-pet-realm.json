@@ -1,0 +1,142 @@
+{
+    "realm": "ukawa-pet",
+    "enabled": true,
+    "displayName": "ukawa-pet",
+    "registrationAllowed": false,
+    "loginWithEmailAllowed": true,
+    "duplicateEmailsAllowed": false,
+    "resetPasswordAllowed": true,
+    "rememberMe": true,
+    "sslRequired": "external",
+    "bruteForceProtected": true,
+    "permanentLockout": false,
+    "failureFactor": 5,
+    "waitIncrementSeconds": 60,
+    "maxFailureWaitSeconds": 900,
+    "minimumQuickLoginWaitSeconds": 60,
+    "quickLoginCheckMilliSeconds": 1000,
+    "accessTokenLifespan": 300,
+    "accessTokenLifespanForImplicitFlow": 0,
+    "ssoSessionIdleTimeout": 1800,
+    "ssoSessionMaxLifespan": 36000,
+    "offlineSessionIdleTimeout": 2592000,
+    "revokeRefreshToken": true,
+    "refreshTokenMaxReuse": 0,
+    "roles": {
+        "realm": [
+            {
+                "name": "admin",
+                "description": "Local development admin role"
+            }
+        ]
+    },
+    "clients": [
+        {
+            "clientId": "pet-backend",
+            "name": "pet-backend (Resource Server)",
+            "description": "FastAPI Resource Server. Bearer-only: validates incoming JWTs, never initiates login, never holds a secret. Used as 'aud' target by pet-frontend.",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "bearerOnly": true,
+            "publicClient": false,
+            "standardFlowEnabled": false,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "fullScopeAllowed": false,
+            "frontchannelLogout": false,
+            "consentRequired": false
+        },
+        {
+            "clientId": "pet-frontend",
+            "name": "pet-frontend (SPA)",
+            "description": "Browser SPA. Public client using OIDC Authorization Code + PKCE (S256). Implicit flow and Direct Access Grants (ROPC) are disabled.",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": true,
+            "standardFlowEnabled": true,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "fullScopeAllowed": false,
+            "frontchannelLogout": true,
+            "consentRequired": false,
+            "redirectUris": [
+                "http://localhost:5173/*",
+                "http://localhost:3000/*",
+                "http://localhost:8000/*"
+            ],
+            "webOrigins": [
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "http://localhost:8000"
+            ],
+            "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "http://localhost:5173/*##http://localhost:3000/*##http://localhost:8000/*",
+                "access.token.lifespan": "300",
+                "client.session.idle.timeout": "1800",
+                "client.session.max.lifespan": "36000",
+                "client.offline.session.idle.timeout": "0",
+                "client.offline.session.max.lifespan": "0",
+                "use.refresh.tokens": "true",
+                "client_credentials.use_refresh_token": "false",
+                "tls-client-certificate-bound-access-tokens": "false",
+                "require.pushed.authorization.requests": "false",
+                "oauth2.device.authorization.grant.enabled": "false",
+                "oidc.ciba.grant.enabled": "false",
+                "backchannel.logout.session.required": "true",
+                "backchannel.logout.revoke.offline.tokens": "false"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "acr",
+                "profile",
+                "roles",
+                "email"
+            ],
+            "optionalClientScopes": [
+                "address",
+                "phone",
+                "offline_access",
+                "microprofile-jwt"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "audience-pet-backend",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-audience-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "included.client.audience": "pet-backend",
+                        "included.custom.audience": "",
+                        "id.token.claim": "false",
+                        "access.token.claim": "true",
+                        "introspection.token.claim": "true",
+                        "lightweight.claim": "false"
+                    }
+                }
+            ]
+        }
+    ],
+    "users": [
+        {
+            "username": "ukawa",
+            "enabled": true,
+            "emailVerified": true,
+            "firstName": "ukawa",
+            "lastName": "ukawa",
+            "email": "ukawa@example.com",
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "ukawa",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "admin"
+            ]
+        }
+    ]
+}

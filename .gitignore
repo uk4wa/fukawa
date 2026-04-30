@@ -17,3 +17,5 @@ architecture.txt
 htmlcov/
 .coverage
 .coverage.*
+.claude/
+compose.dev.yaml

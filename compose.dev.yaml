@@ -1,0 +1,29 @@
+services:
+  app:
+    command: >
+      uv run --no-sync uvicorn
+      --factory pet.main:create_app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --reload-dir /app/src
+    environment:
+      DEBUG: "true"
+      LOG_FORMAT: ${LOG_FORMAT:-console}
+      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+      PYTHONPATH: /app/src
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./pyproject.toml:/app/pyproject.toml:ro
+      - ./uv.lock:/app/uv.lock:ro
+
+  migrate:
+    environment:
+      PYTHONPATH: /app/src
+    volumes:
+      - ./src:/app/src:ro
+      - ./alembic:/app/alembic:ro
+      - ./alembic.ini:/app/alembic.ini:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+      - ./uv.lock:/app/uv.lock:ro
