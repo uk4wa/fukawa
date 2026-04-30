@@ -49,6 +49,12 @@ def register_http_logging(app: FastAPI) -> None:
                     duration_ms=duration_ms,
                 )
 
+            logger.info(
+                "http_request_finished",
+                status_code=response.status_code,
+                duration_ms=duration_ms,
+            )
+
             return response
         finally:
             structlog.contextvars.clear_contextvars()
