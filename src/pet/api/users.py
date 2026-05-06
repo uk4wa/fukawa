@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from pet.api.auth import CurrentPrincipal
 from pet.app.usecases.users import provision_user_from_claims
 from pet.di.db import Executor
-from pet.domain.models import User
 
 users = APIRouter(prefix="/users")
 
@@ -23,7 +22,7 @@ class MeOut(BaseModel):
 
 @users.post(
     "/me",
-    response_model=User,
+    response_model=MeOut,
     status_code=status.HTTP_200_OK,
 )
 async def login(

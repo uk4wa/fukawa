@@ -134,5 +134,5 @@ def _test_principal() -> Principal:
         email="ukawa@example.com",
         first_name="ukawa",
         last_name="ukawa",
-        scopes=frozenset({"orgs:write"}),
+        scopes=frozenset({"organizations:write"}),
     )

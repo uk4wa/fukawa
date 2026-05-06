@@ -31,7 +31,7 @@ class PublicId(BaseModel):
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=PublicId,
-    dependencies=[Depends(required_scopes("orgs:write"))],
+    dependencies=[Depends(required_scopes("organizations:write"))],
 )
 async def create_organization(
     org: CreateOrgDtoIn,

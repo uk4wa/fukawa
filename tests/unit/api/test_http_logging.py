@@ -61,3 +61,30 @@ async def test_http_logging_logs_4xx_as_warning(mocker) -> None:
 
     assert response.status_code == 409
     info_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_http_logging_renders_unhandled_exceptions(mocker) -> None:
+    app = FastAPI()
+    register_http_logging(app)
+
+    @app.get("/boom")
+    async def boom() -> None:
+        raise RuntimeError("boom")
+
+    info_mock = mocker.patch("pet.api.middleware.http_logging.logger.info")
+    exception_log = mocker.patch("pet.api.middleware.http_logging.logger.exception")
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app, raise_app_exceptions=False),
+        base_url="http://test",
+    ) as client:
+        response = await client.get("/boom")
+
+    assert response.status_code == 500
+    assert response.headers["X-Request-ID"]
+    body = response.json()
+    assert body["code"] == "internal_error"
+    exception_log.assert_called_once_with("unhandled_exception")
+    info_mock.assert_called_once()
+    assert info_mock.call_args.kwargs["status_code"] == 500

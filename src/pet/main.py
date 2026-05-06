@@ -11,6 +11,7 @@ from pet.api.exceptions_handler import register_exception_handlers
 from pet.api.health import health
 from pet.api.middleware.http_logging import register_http_logging
 from pet.api.organizations import organizations
+from pet.api.users import users
 from pet.config.logging import configure_logging, get_logger
 from pet.config.settings import Settings, get_settings
 from pet.di.auth import build_auth_components
@@ -109,6 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health)
     app.include_router(organizations)
+    app.include_router(users)
 
     register_exception_handlers(app)
     register_http_logging(app)

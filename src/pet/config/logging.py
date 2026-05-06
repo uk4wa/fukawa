@@ -192,9 +192,8 @@ def configure_logging(
                     "propagate": False,
                 },
                 "uvicorn.access": {
-                    "handlers": ["default"],
-                    "level": normalized_level,
-                    "filters": ["skip_healthcheck_access"],
+                    "handlers": [],
+                    "level": "CRITICAL",
                     "propagate": False,
                 },
                 "httpx": {
