@@ -17,3 +17,4 @@ architecture.txt
 htmlcov/
 .coverage
 .coverage.*
+.claude/

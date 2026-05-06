@@ -17,6 +17,7 @@ async def test_create_organization_cmd_creates_domain_org_and_returns_public_id(
     uuid = UUID("11111111-1111-1111-1111-111111111111")
     cmd = CreateOrganizationCmdIn(name="Alice")
     uow = mocker.Mock()
+    uow.orgs.create = mocker.AsyncMock()
     bind_contextvars = mocker.patch(
         "pet.app.usecases.organizations.structlog.contextvars.bind_contextvars"
     )
@@ -28,7 +29,7 @@ async def test_create_organization_cmd_creates_domain_org_and_returns_public_id(
         uuid_gen=lambda: uuid,
     )
 
-    uow.orgs.create.assert_called_once()
+    uow.orgs.create.assert_awaited_once()
     (args,), _ = uow.orgs.create.call_args
 
     assert isinstance(args, Organization)

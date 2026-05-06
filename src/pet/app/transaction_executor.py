@@ -35,44 +35,33 @@ class TransactionExecutor:
         handler_name = _handler_name(handler)
         logger.debug("transaction_started", use_case_handler=handler_name)
 
-        structlog.contextvars.bind_contextvars(use_case_handler=handler_name)
+        with structlog.contextvars.bound_contextvars(use_case_handler=handler_name):
+            async with self._uow_factory() as uow:
+                try:
+                    result = await handler(uow, *args, **kwargs)
 
-        async with self._uow_factory() as uow:
-            try:
-                result = await handler(uow, *args, **kwargs)
+                    await uow.commit()
 
-                await uow.commit()
+                    logger.info(
+                        "transaction_committed",
+                        duration_ms=_duration_ms(started_at),
+                    )
 
-                logger.info(
-                    "transaction_committed",
-                    use_case_handler=handler_name,
-                    duration_ms=_duration_ms(started_at),
-                )
-
-                return result
-            except PersistenceError as e:
-                logger.warning(
-                    "transaction_db_error",
-                    use_case_handler=handler_name,
-                    duration_ms=_duration_ms(started_at),
-                    persistence_error_kind=getattr(e, "kind", None),
-                    sqlstate=getattr(e, "sqlstate", None),
-                    constraint_name=getattr(e, "constraint_name", None),
-                    retryable=getattr(e, "retryable", None),
-                )
-                raise translate_db_error(e) from e
-            except ValidationError as e:
-                logger.warning(
-                    "transaction_validation_failed",
-                    use_case_handler=handler_name,
-                    duration_ms=_duration_ms(started_at),
-                    validation_cause=e.cause,
-                )
-                raise translate_domain_validation_error(e) from e
-            except Exception:
-                logger.exception(
-                    "transaction_failed",
-                    use_case_handler=handler_name,
-                    duration_ms=_duration_ms(started_at),
-                )
-                raise
+                    return result
+                except PersistenceError as e:
+                    logger.warning(
+                        "transaction_db_error",
+                        duration_ms=_duration_ms(started_at),
+                        persistence_error_kind=e.kind,
+                        sqlstate=e.sqlstate,
+                        constraint_name=e.constraint_name,
+                        retryable=e.retryable,
+                    )
+                    raise translate_db_error(e) from e
+                except ValidationError as e:
+                    logger.info(
+                        "transaction_validation_failed",
+                        duration_ms=_duration_ms(started_at),
+                        validation_cause=e.cause,
+                    )
+                    raise translate_domain_validation_error(e) from e

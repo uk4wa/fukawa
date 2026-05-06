@@ -4,8 +4,8 @@ from typing import Annotated
 from fastapi import Depends, Request
 
 from pet.app.transaction_executor import TransactionExecutor
-from pet.domain.uow import UnitOfWork
-from pet.infra.sqla.db.repos import SQLAlchemyOrganizationsRepo
+from pet.domain.uow import TransactionExecutorProtocol, UnitOfWork
+from pet.infra.sqla.db.repos import SQLAlchemyOrganizationsRepo, SQLAlchemyUsersRepo
 from pet.infra.sqla.uow import SQLAlchemyUnitOfWork
 
 
@@ -16,6 +16,7 @@ def get_uow_factory(r: Request) -> Callable[[], UnitOfWork]:
         return SQLAlchemyUnitOfWork(
             session_factory=sf,
             orgs_repo_factory=SQLAlchemyOrganizationsRepo,
+            users_repo_factory=SQLAlchemyUsersRepo,
         )
 
     return factory
@@ -25,3 +26,6 @@ def get_executor(
     uow_factory: Annotated[Callable[[], UnitOfWork], Depends(get_uow_factory)],
 ) -> TransactionExecutor:
     return TransactionExecutor(uow_factory=uow_factory)
+
+
+Executor = Annotated[TransactionExecutorProtocol, Depends(get_executor)]

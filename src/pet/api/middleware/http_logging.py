@@ -8,6 +8,7 @@ import structlog
 from fastapi import FastAPI, Request
 from starlette.responses import Response
 
+from pet.api.exceptions_handler import problem
 from pet.config.logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,19 +41,35 @@ def register_http_logging(app: FastAPI) -> None:
         try:
             response = await call_next(request)
         except Exception:
-            raise
-        else:
-            duration_ms = get_duration_ms(started_at)
+            logger.exception("unhandled_exception")
+            response = problem(
+                status=500,
+                title="Internal Server Error",
+                detail="Unexpected error",
+                code="internal_error",
+                instance=request.url.path,
+                request_id=request_id,
+            )
+
             response.headers["X-Request-ID"] = request_id
 
-            if request.url.path in SKIP_LOG_PATHS:
-                return response
+            if request.url.path not in SKIP_LOG_PATHS:
+                logger.info(
+                    "http_request_finished",
+                    status_code=500,
+                    duration_ms=get_duration_ms(started_at),
+                )
 
-            logger.info(
-                "http_request_finished",
-                status_code=response.status_code,
-                duration_ms=duration_ms,
-            )
+            return response
+        else:
+            response.headers["X-Request-ID"] = request_id
+
+            if request.url.path not in SKIP_LOG_PATHS:
+                logger.info(
+                    "http_request_finished",
+                    status_code=response.status_code,
+                    duration_ms=get_duration_ms(started_at),
+                )
 
             return response
         finally:

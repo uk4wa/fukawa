@@ -2,12 +2,14 @@ from collections.abc import Awaitable, Callable
 from types import TracebackType
 from typing import Concatenate, Protocol, Self
 
-from pet.domain.repos import OrganizationsRepo
+from pet.domain.repos import OrganizationsRepo, UsersRepo
 
 
 class UnitOfWork(Protocol):
     @property
     def orgs(self) -> OrganizationsRepo: ...
+    @property
+    def users(self) -> UsersRepo: ...
 
     async def __aenter__(self) -> Self: ...
     async def __aexit__(
