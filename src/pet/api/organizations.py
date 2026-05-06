@@ -1,17 +1,14 @@
-from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field, StrictStr, field_validator
 
+from pet.api.auth import required_scopes
 from pet.app.usecases.organizations import CreateOrganizationCmdIn, create_organization_cmd
-from pet.di.db import get_executor
-from pet.domain.uow import TransactionExecutorProtocol
+from pet.di.db import Executor
 from pet.domain.value_objects import ORG_NAME_DESCRIPTION, validate_org_name
 
 organizations = APIRouter(prefix="/orgs")
-
-Executor = Annotated[TransactionExecutorProtocol, Depends(get_executor)]
 
 
 class CreateOrgDtoIn(BaseModel):
@@ -34,6 +31,7 @@ class PublicId(BaseModel):
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=PublicId,
+    dependencies=[Depends(required_scopes("orgs:write"))],
 )
 async def create_organization(
     org: CreateOrgDtoIn,

@@ -33,6 +33,24 @@ class SessionMakerSettings(BaseModel):
     autoflush: bool = True
 
 
+class KeycloakSettings(BaseModel):
+    hostname: str
+    issuer_url: str
+    jwks_uri: str
+    client_id: str
+    audience: list[str] = Field(default_factory=list)
+    allowed_algorithms: list[str] = Field(default_factory=lambda: ["RS256"])
+    jwks_cache_ttl_seconds: int = Field(
+        default=300,
+        ge=0,
+    )
+    leeway_seconds: int = Field(
+        default=30,
+        ge=0,
+    )
+    http_timeout_seconds: float = Field(default=5.0, ge=0.0)
+
+
 class Settings(BaseSettings):
     app_name: str = _APP_NAME
 
@@ -42,6 +60,7 @@ class Settings(BaseSettings):
     db: DatabaseSettings
     engine: EngineSettings = Field(default_factory=EngineSettings)
     session_maker: SessionMakerSettings = Field(default_factory=SessionMakerSettings)
+    keycloak: KeycloakSettings
 
     def __init__(self, **values: Any) -> None:
         super().__init__(**values)

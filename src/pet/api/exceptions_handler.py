@@ -6,12 +6,15 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
 from starlette.status import (
+    HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN,
     HTTP_409_CONFLICT,
     HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_503_SERVICE_UNAVAILABLE,
 )
 
+from pet.app.auth.exc import AuthenticationError, AuthError, AuthorizationError
 from pet.app.errors import VALIDATION_ERROR_TITLE, AppError, AppErrorCode
 from pet.config.logging import get_logger
 
@@ -49,6 +52,22 @@ def _jsonable_validation_errors(validation_error: RequestValidationError) -> lis
     )
 
 
+_BEARER_REALM = "ukawa-pet"
+
+
+def _www_authenticate_header(error: AuthError, status_code: int) -> str:
+    parts = [f'Bearer realm="{_BEARER_REALM}"']
+    parts.append(f'error="{error.error_code}"')
+    if error.description:
+        parts.append(f'error_description="{_escape_quoted(error.description)}"')
+    return ", ".join(parts)
+
+
+def _escape_quoted(value: str) -> str:
+    """Escape characters that would break an HTTP quoted-string."""
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def problem(
     *,
     title: str,
@@ -84,7 +103,7 @@ def problem(
 def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(AppError)
-    async def app_error_handler(r: Request, exc: Exception) -> JSONResponse:
+    async def _app_error_handler(r: Request, exc: Exception) -> JSONResponse:
         app_error = cast(AppError, exc)
 
         status_code = get_http_status_for_error(app_error.code)
@@ -105,7 +124,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def http_error_handler(r: Request, exc: Exception) -> JSONResponse:
+    async def _http_error_handler(r: Request, exc: Exception) -> JSONResponse:
         http_error = cast(StarletteHTTPException, exc)
         if r.url.path not in ["/readyz", "/healthz"]:
             log = (
@@ -129,7 +148,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    async def _validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
         validation_error = cast(RequestValidationError, exc)
         errors = _jsonable_validation_errors(validation_error)
         detail = "Request validation failed"
@@ -157,7 +176,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    async def _unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
         logger.exception(
             "unhandled_exception",
         )
@@ -168,4 +187,42 @@ def register_exception_handlers(app: FastAPI) -> None:
             code="internal_error",
             instance=str(request.url.path),
             request_id=_request_id(request),
+        )
+
+    @app.exception_handler(AuthenticationError)
+    async def _on_authn(r: Request, exc: Exception) -> JSONResponse:
+        e = cast(AuthenticationError, exc)
+        logger.info(
+            "authentication_failed",
+            error_code=e.error_code,
+            error_class=type(e).__name__,
+            error_description=e.description,
+        )
+        return problem(
+            status=HTTP_401_UNAUTHORIZED,
+            title="Unauthorized",
+            detail=e.description,
+            code=e.error_code,
+            instance=r.url.path,
+            request_id=_request_id(r),
+            headers={"WWW-Authenticate": _www_authenticate_header(e, HTTP_401_UNAUTHORIZED)},
+        )
+
+    @app.exception_handler(AuthorizationError)
+    async def _on_authz(r: Request, exc: Exception) -> JSONResponse:
+        e = cast(AuthorizationError, exc)
+        logger.info(
+            "authorization_failed",
+            error_code=e.error_code,
+            error_class=type(e).__name__,
+            error_description=e.description,
+        )
+        return problem(
+            status=HTTP_403_FORBIDDEN,
+            title="Forbidden",
+            detail=e.description,
+            code=e.error_code,
+            instance=r.url.path,
+            request_id=_request_id(r),
+            headers={"WWW-Authenticate": _www_authenticate_header(e, HTTP_403_FORBIDDEN)},
         )

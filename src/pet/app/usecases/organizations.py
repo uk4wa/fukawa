@@ -43,7 +43,7 @@ async def create_organization_cmd(
         name=NameVO.create(cmd.name),
     )
 
-    uow.orgs.create(domain_org)
+    await uow.orgs.create(domain_org)
 
     logger.debug("organization_create_staged")
 

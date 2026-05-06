@@ -8,13 +8,15 @@ services:
       - POSTGRES_USER=$DB__USER
       - POSTGRES_PASSWORD=$DB__PASSWORD
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $DB__USER -d $DB__NAME"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql
+    networks:
+      - backend-network
 
   migrate:
     build:
@@ -35,6 +37,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - backend-network
 
   app:
     build: 
@@ -42,17 +46,28 @@ services:
       dockerfile: Dockerfile
       target: runtime
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       APP_NAME: ${APP_NAME:-pet-uk4wa}
       LOG_FORMAT: ${LOG_FORMAT:-json}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
       DB__HOST: db
       DB__DRIVER: ${DB__DRIVER}
       DB__PORT: ${DB__PORT}
       DB__NAME: ${DB__NAME}
       DB__USER: ${DB__USER}
       DB__PASSWORD: ${DB__PASSWORD}
+
+      KEYCLOAK__HOSTNAME: $KEYCLOAK__HOSTNAME
+      KEYCLOAK__ISSUER_URL: $KEYCLOAK__ISSUER_URL
+      KEYCLOAK__JWKS_URI: $KEYCLOAK__JWKS_URI
+      KEYCLOAK__CLIENT_ID: $KEYCLOAK__CLIENT_ID
+      KEYCLOAK__AUDIENCE: $KEYCLOAK__AUDIENCE
+      KEYCLOAK__ALLOWED_ALGORITHMS: $KEYCLOAK__ALLOWED_ALGORITHMS
+      KEYCLOAK__JWKS_CACHE_TTL_SECONDS: $KEYCLOAK__JWKS_CACHE_TTL_SECONDS
+      KEYCLOAK__LEEWAY_SECONDS: $KEYCLOAK__LEEWAY_SECONDS
+      KEYCLOAK__HTTP_TIMEOUT_SECONDS: $KEYCLOAK__HTTP_TIMEOUT_SECONDS
     restart: unless-stopped
     healthcheck:
       test:
@@ -71,6 +86,95 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+    networks:
+      - backend-network
+
+  keycloak-db:
+    image: postgres:18-alpine
+    container_name: keycloak-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: $KEYCLOAK_DB__NAME
+      POSTGRES_USER: $KEYCLOAK_DB__USER
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB__PASSWORD:?KEYCLOAK_DB__PASSWORD is required}
+
+    volumes:
+      - kc_pgdata:/var/lib/postgresql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+    networks:
+      - backend-network
+
+  keycloak:
+    build:
+      context: .
+      dockerfile: Dockerfile.keycloak
+
+    image: ukawa/keycloak:26.6.1
+    container_name: ukawa-keycloak
+    restart: unless-stopped
+
+    command: ["start", "--optimized", "--import-realm"]
+
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+
+    environment:
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_PORT: $KEYCLOAK_DB__PORT
+      KC_DB_URL_DATABASE: $KEYCLOAK_DB__NAME
+      KC_DB_USERNAME: $KEYCLOAK_DB__USER
+      KC_DB_PASSWORD: ${KEYCLOAK_DB__PASSWORD:?KEYCLOAK_DB__PASSWORD is required}
+
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK__ADMIN_USER:?KEYCLOAK__ADMIN_USER is required}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK__ADMIN_PASSWORD:?KEYCLOAK__ADMIN_PASSWORD is required}
+
+      KC_HOSTNAME: ${KEYCLOAK__HOSTNAME:-http://auth.localhost:8080}
+      KC_HOSTNAME_STRICT: "true"
+
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8080"
+
+      KC_LOG_LEVEL: $KEYCLOAK__LOG_LEVEL
+
+      KC_DB_POOL_MIN_SIZE: $KEYCLOAK__DB_POOL_MIN_SIZE
+      KC_DB_POOL_MAX_SIZE: $KEYCLOAK__DB_POOL_MAX_SIZE
+
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -ec 'exec 3<>/dev/tcp/127.0.0.1/9000; printf \"GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; head -n 1 <&3 | grep -q \"200\"'"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+    networks:
+      backend-network:
+        aliases:
+          - auth.localhost
 
 volumes:
+  kc_pgdata:
   pgdata:
+
+networks:
+  backend-network:
+    driver: bridge

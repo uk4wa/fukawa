@@ -46,6 +46,15 @@ jobs:
             DB__NAME: pet_ci
             DB__USER: postgres
             DB__PASSWORD: postgres
+            KEYCLOAK__HOSTNAME: http://auth.localhost:8080
+            KEYCLOAK__ISSUER_URL: http://auth.localhost:8080/realms/ukawa-pet
+            KEYCLOAK__JWKS_URI: http://127.0.0.1:8080/realms/ukawa-pet/protocol/openid-connect/certs
+            KEYCLOAK__CLIENT_ID: pet-backend
+            KEYCLOAK__AUDIENCE: "[\"pet-backend\"]"
+            KEYCLOAK__ALLOWED_ALGORITHMS: "[\"RS256\"]"
+            KEYCLOAK__JWKS_CACHE_TTL_SECONDS: "300"
+            KEYCLOAK__LEEWAY_SECONDS: "30"
+            KEYCLOAK__HTTP_TIMEOUT_SECONDS: "5"
 
         steps:
             - name: Checkout repository
@@ -111,6 +120,24 @@ jobs:
             DB__NAME: pet_compose_ci
             DB__USER: postgres
             DB__PASSWORD: postgres
+            KEYCLOAK__HOSTNAME: http://auth.localhost:8080
+            KEYCLOAK__ISSUER_URL: http://auth.localhost:8080/realms/ukawa-pet
+            KEYCLOAK__JWKS_URI: http://keycloak:8080/realms/ukawa-pet/protocol/openid-connect/certs
+            KEYCLOAK__CLIENT_ID: pet-backend
+            KEYCLOAK__AUDIENCE: "[\"pet-backend\"]"
+            KEYCLOAK__ALLOWED_ALGORITHMS: "[\"RS256\"]"
+            KEYCLOAK__JWKS_CACHE_TTL_SECONDS: "300"
+            KEYCLOAK__LEEWAY_SECONDS: "30"
+            KEYCLOAK__HTTP_TIMEOUT_SECONDS: "5"
+            KEYCLOAK__ADMIN_USER: admin
+            KEYCLOAK__ADMIN_PASSWORD: admin
+            KEYCLOAK__LOG_LEVEL: INFO
+            KEYCLOAK__DB_POOL_MIN_SIZE: "2"
+            KEYCLOAK__DB_POOL_MAX_SIZE: "20"
+            KEYCLOAK_DB__PORT: "5432"
+            KEYCLOAK_DB__NAME: keycloak_ci
+            KEYCLOAK_DB__USER: postgres
+            KEYCLOAK_DB__PASSWORD: postgres
 
         steps:
             - name: Checkout repository
@@ -126,7 +153,8 @@ jobs:
               run: docker compose ps
 
             - name: Smoke check application
-              run: curl --fail --silent --show-error --retry 12 --retry-delay 5
+              run: >-
+                  curl --fail --silent --show-error --retry 12 --retry-delay 5
                   --retry-connrefused --retry-all-errors
                   http://127.0.0.1:8000/readyz
 

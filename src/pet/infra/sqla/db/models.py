@@ -56,8 +56,16 @@ class OrgRole(enum.StrEnum):
 class User(Base, IdMixin, TimestampMixin):
     __tablename__ = "users"
 
-    first_name: Mapped[str] = mapped_column(String(128))
-    last_name: Mapped[str] = mapped_column(String(128))
+    username: Mapped[str] = mapped_column(Text, nullable=False)
+    first_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+    email: Mapped[str] = mapped_column(Text, nullable=False)
+
+    auth_issuer: Mapped[str] = mapped_column(Text, nullable=False)
+    auth_subject: Mapped[str] = mapped_column(Text, nullable=False)
+
+    last_login_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     org_memberships: Mapped[list["Membership"]] = relationship(
         back_populates="user",
@@ -68,6 +76,14 @@ class User(Base, IdMixin, TimestampMixin):
     tasks: Mapped[list["Task"]] = relationship(
         back_populates="assignee",
         lazy="raise_on_sql",
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "auth_subject",
+            "auth_issuer",
+            name="uq_users_auth_subject_auth_issuer",
+        ),
     )
 
 
