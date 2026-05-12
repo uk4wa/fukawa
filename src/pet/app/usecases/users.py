@@ -50,4 +50,3 @@ async def provision_user_from_claims(
     )
 
     return user, inserted
-
