@@ -90,7 +90,9 @@ jobs:
               run: uv run alembic check
 
             - name: Run tests
-              run: uv run pytest -q --junitxml=pytest-report.xml
+              run: uv run pytest -q --junitxml=pytest-report.xml --cov=pet
+                  --cov-report=term-missing:skip-covered --cov-report=html
+                  --cov-branch
 
             - name: Upload test report
               if: always()

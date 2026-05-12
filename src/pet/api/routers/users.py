@@ -24,6 +24,13 @@ class MeOut(BaseModel):
     "/me",
     response_model=MeOut,
     status_code=status.HTTP_200_OK,
+    summary="Login / provision current user",
+    description=(
+        "Upserts the authenticated user profile from JWT claims. "
+        "Returns 201 on first login, 200 on subsequent calls. "
+        "POST is used intentionally: this call has a write side-effect "
+        "(JIT provisioning) and is not idempotent on first call."
+    ),
 )
 async def login(
     principal: CurrentPrincipal,

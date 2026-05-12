@@ -8,6 +8,7 @@ from starlette.responses import JSONResponse
 from starlette.status import (
     HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
     HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_500_INTERNAL_SERVER_ERROR,
@@ -25,6 +26,8 @@ def get_http_status_for_error(code: AppErrorCode) -> int:
     match code:
         case AppErrorCode.CONFLICT | AppErrorCode.ORGANIZATION_NAME_TAKEN:
             return HTTP_409_CONFLICT
+        case AppErrorCode.NOT_FOUND:
+            return HTTP_404_NOT_FOUND
         case AppErrorCode.VALIDATION:
             return HTTP_422_UNPROCESSABLE_CONTENT
         case AppErrorCode.SERVICE_UNAVAILABLE:
@@ -52,11 +55,9 @@ def _jsonable_validation_errors(validation_error: RequestValidationError) -> lis
     )
 
 
-_BEARER_REALM = "ukawa-pet"
-
-
-def _www_authenticate_header(error: AuthError, status_code: int) -> str:
-    parts = [f'Bearer realm="{_BEARER_REALM}"']
+def _www_authenticate_header(error: AuthError, r: Request) -> str:
+    realm = r.app.state.issuer_url.split("/")[-1]
+    parts = [f'Bearer realm="{realm}"']
     parts.append(f'error="{error.error_code}"')
     if error.description:
         parts.append(f'error_description="{_escape_quoted(error.description)}"')
@@ -107,7 +108,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         app_error = cast(AppError, exc)
 
         status_code = get_http_status_for_error(app_error.code)
-        log = logger.error if status_code >= HTTP_500_INTERNAL_SERVER_ERROR else logger.info
+        log = logger.exception if status_code >= HTTP_500_INTERNAL_SERVER_ERROR else logger.info
         log(
             "app_error_rendered",
             error_code=app_error.code,
@@ -128,7 +129,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         http_error = cast(StarletteHTTPException, exc)
         if r.url.path not in ["/readyz", "/healthz"]:
             log = (
-                logger.error
+                logger.exception
                 if http_error.status_code >= HTTP_500_INTERNAL_SERVER_ERROR
                 else logger.info
             )
@@ -175,20 +176,6 @@ def register_exception_handlers(app: FastAPI) -> None:
             request_id=_request_id(request),
         )
 
-    @app.exception_handler(Exception)
-    async def _unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception(
-            "unhandled_exception",
-        )
-        return problem(
-            status=HTTP_500_INTERNAL_SERVER_ERROR,
-            title="Internal Server Error",
-            detail="Unexpected error",
-            code="internal_error",
-            instance=str(request.url.path),
-            request_id=_request_id(request),
-        )
-
     @app.exception_handler(AuthenticationError)
     async def _on_authn(r: Request, exc: Exception) -> JSONResponse:
         e = cast(AuthenticationError, exc)
@@ -205,7 +192,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             code=e.error_code,
             instance=r.url.path,
             request_id=_request_id(r),
-            headers={"WWW-Authenticate": _www_authenticate_header(e, HTTP_401_UNAUTHORIZED)},
+            headers={"WWW-Authenticate": _www_authenticate_header(e, r)},
         )
 
     @app.exception_handler(AuthorizationError)
@@ -224,5 +211,18 @@ def register_exception_handlers(app: FastAPI) -> None:
             code=e.error_code,
             instance=r.url.path,
             request_id=_request_id(r),
-            headers={"WWW-Authenticate": _www_authenticate_header(e, HTTP_403_FORBIDDEN)},
+        )
+
+    @app.exception_handler(Exception)
+    async def _unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+        logger.exception(
+            "unhandled_exception",
+        )
+        return problem(
+            status=HTTP_500_INTERNAL_SERVER_ERROR,
+            title="Internal Server Error",
+            detail="Unexpected error",
+            code="internal_error",
+            instance=str(request.url.path),
+            request_id=_request_id(request),
         )

@@ -126,6 +126,18 @@ async def clean_db(app: FastAPI) -> None:
         await session.commit()
 
 
+@pytest_asyncio.fixture
+async def provisioned_user(client: AsyncClient) -> None:
+    """Ensures the test principal exists in the users table.
+
+    Must be listed as a dependency in any test that calls an endpoint
+    which requires an authenticated user to be pre-provisioned
+    (e.g. create_organization_cmd does get_by_auth_identity).
+    """
+    response = await client.post("/users/me")
+    assert response.status_code in (200, 201)
+
+
 def _test_principal() -> Principal:
     return Principal(
         subject="11111111-1111-1111-1111-111111111111",

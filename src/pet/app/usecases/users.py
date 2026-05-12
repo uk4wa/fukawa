@@ -2,10 +2,13 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from pet.config.logging import get_logger
 from pet.domain.auth import Principal
 from pet.domain.models import User
 from pet.domain.uow import UnitOfWork
 from pet.domain.value_objects import PublicId
+
+logger = get_logger(__name__)
 
 
 async def provision_user_from_claims(
@@ -14,14 +17,12 @@ async def provision_user_from_claims(
     uuid_gen: Callable[[], UUID] = uuid4,
 ) -> tuple[User, bool]:
     now = datetime.now(UTC)
+    public_id = PublicId(uuid_gen())
 
-    existing = await uow.users.get_by_auth_identity(
-        issuer=principal.issuer,
-        subject=principal.subject,
+    logger.debug(
+        "provision_user_started",
+        public_id=public_id.value,
     )
-
-    public_id = existing.public_id if existing is not None else PublicId(uuid_gen())
-    created_at = existing.created_at if existing is not None else now
 
     user = User.create(
         public_id=public_id,
@@ -32,8 +33,21 @@ async def provision_user_from_claims(
         first_name=principal.first_name,
         last_name=principal.last_name,
         last_login_at=now,
-        created_at=created_at,
+        created_at=now,
         updated_at=now,
     )
 
-    return (await uow.users.upsert(user), existing is None)
+    logger.debug(
+        "provision_user_staged",
+        user_public_id=public_id.value,
+    )
+
+    user, inserted = await uow.users.upsert(user)
+
+    logger.debug(
+        "provision_user_finished",
+        created=inserted,
+    )
+
+    return user, inserted
+

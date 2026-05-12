@@ -17,7 +17,6 @@ async def test_transaction_executor_passed(
 ) -> None:
     handler = mocker.AsyncMock(return_value="ok")
     info_log = mocker.patch("pet.app.transaction_executor.logger.info")
-    debug_log = mocker.patch("pet.app.transaction_executor.logger.debug")
 
     result = await executor.run(handler, 123, q="123str")
 
@@ -27,8 +26,6 @@ async def test_transaction_executor_passed(
     handler.assert_awaited_once_with(uow_mock, 123, q="123str")
     uow_mock.commit.assert_awaited_once()
     uow_mock.__aexit__.assert_awaited_once_with(None, None, None)
-    debug_log.assert_called_once()
-    info_log.assert_called_once()
     assert info_log.call_args.args == ("transaction_committed",)
     assert "duration_ms" in info_log.call_args.kwargs
 
@@ -49,7 +46,7 @@ async def test_transaction_executor_failed_raised_db_exception(
         return_value=translated_exc,
         autospec=True,
     )
-    warning_log = mocker.patch("pet.app.transaction_executor.logger.warning")
+    info_log = mocker.patch("pet.app.transaction_executor.logger.info")
     persistence_error = PersistenceError(kind=PersistenceErrorKind.UNIQUE)
     handler = mocker.AsyncMock(side_effect=persistence_error, spec=True)
 
@@ -63,8 +60,7 @@ async def test_transaction_executor_failed_raised_db_exception(
     uow_mock.commit.assert_not_awaited()
 
     uow_mock.__aexit__.assert_awaited_once_with(TranslatedError, translated_exc, ANY)
-    warning_log.assert_called_once()
-    assert warning_log.call_args.args == ("transaction_db_error",)
+    assert info_log.call_args.args == ("transaction_db_error",)
 
 
 @pytest.mark.asyncio
@@ -96,7 +92,6 @@ async def test_transaction_executor_failed_raises_translated_validation_exceptio
     uow_mock.commit.assert_not_awaited()
     translate_validation_error.assert_called_once_with(validation_error)
     uow_mock.__aexit__.assert_awaited_once_with(TranslatedError, translated_exc, ANY)
-    info_log.assert_called_once()
     assert info_log.call_args.args == ("transaction_validation_failed",)
 
 

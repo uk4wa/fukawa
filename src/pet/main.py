@@ -7,11 +7,11 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 from starlette.types import Lifespan
 
-from pet.api.exceptions_handler import register_exception_handlers
+from pet.api.exception_handlers import register_exception_handlers
 from pet.api.health import health
 from pet.api.middleware.http_logging import register_http_logging
-from pet.api.organizations import organizations
-from pet.api.users import users
+from pet.api.routers.organizations import organizations
+from pet.api.routers.users import users
 from pet.config.logging import configure_logging, get_logger
 from pet.config.settings import Settings, get_settings
 from pet.di.auth import build_auth_components
@@ -62,7 +62,7 @@ def build_lifespan() -> Lifespan[FastAPI]:
                 issuer=settings.keycloak.issuer_url,
                 allowed_algorithms=settings.keycloak.allowed_algorithms,
             )
-
+            app.state.issuer_url = settings.keycloak.issuer_url
             logger.info("startup_succeeded")
 
         except Exception:
@@ -79,17 +79,14 @@ def build_lifespan() -> Lifespan[FastAPI]:
             logger.info("shutdown_started")
 
             try:
-                if engine is not None:
-                    await engine.dispose()
+                await engine.dispose()
             except Exception:
                 logger.exception("shutdown_failed")
-
-            try:
-                if http_client is not None:
+            finally:
+                try:
                     await http_client.aclose()
-            except Exception:
-                logger.exception("auth_shutdown_failed")
-                raise
+                except Exception:
+                    logger.exception("auth_shutdown_failed")
 
             logger.info("shutdown_succeeded")
 

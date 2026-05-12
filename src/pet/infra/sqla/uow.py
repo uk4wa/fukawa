@@ -1,22 +1,20 @@
 from collections.abc import Callable
 from types import TracebackType
-from typing import Final, Self
+from typing import Self
 from uuid import uuid4
 
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from pet.config.logging import get_logger
-from pet.domain.repos import OrganizationsRepo, UsersRepo
-from pet.infra.sqla.db.exc import UoWNotInitializedError, determine_exc
+from pet.domain.repos import MembershipsRepo, OrganizationsRepo, UsersRepo
+from pet.infra.sqla.db.exc import DB_OPERATION_ERRORS, UoWNotInitializedError, determine_exc
 
 type OrganizationRepoFactory = Callable[[AsyncSession], OrganizationsRepo]
 type UsersRepoFactory = Callable[[AsyncSession], UsersRepo]
+type MembershipsRepoFactory = Callable[[AsyncSession], MembershipsRepo]
 type AsyncSessionFactory = async_sessionmaker[AsyncSession]
 
 logger = get_logger(__name__)
-
-DB_OPERATION_ERRORS: Final = (SQLAlchemyError, OSError)
 
 
 class SQLAlchemyUnitOfWork:
@@ -25,14 +23,17 @@ class SQLAlchemyUnitOfWork:
         session_factory: AsyncSessionFactory,
         orgs_repo_factory: OrganizationRepoFactory,
         users_repo_factory: UsersRepoFactory,
+        memberships_repo_factory: MembershipsRepoFactory,
     ) -> None:
         self._sf: AsyncSessionFactory = session_factory
         self._orgs_repo_factory: OrganizationRepoFactory = orgs_repo_factory
         self._users_repo_factory: UsersRepoFactory = users_repo_factory
+        self._memberships_repo_factory: MembershipsRepoFactory = memberships_repo_factory
 
         self._session: AsyncSession | None = None
         self._orgs: OrganizationsRepo | None = None
         self._users: UsersRepo | None = None
+        self._memberships: MembershipsRepo | None = None
 
         self._rolled_back: bool = False
         self._uow_id: str | None = uuid4().hex
@@ -43,6 +44,7 @@ class SQLAlchemyUnitOfWork:
             self._session = session
             self._orgs = self._orgs_repo_factory(self._session)
             self._users = self._users_repo_factory(self._session)
+            self._memberships = self._memberships_repo_factory(self._session)
 
             logger.debug(
                 "uow_started",
@@ -57,6 +59,7 @@ class SQLAlchemyUnitOfWork:
             self._session = None
             self._orgs = None
             self._users = None
+            self._memberships = None
 
             logger.exception(
                 "uow_start_failed",
@@ -97,6 +100,8 @@ class SQLAlchemyUnitOfWork:
             self._session = None
             self._orgs = None
             self._users = None
+            self._memberships = None
+
             self._uow_id = None
             self._rolled_back = False
 
@@ -184,7 +189,13 @@ class SQLAlchemyUnitOfWork:
         return self._orgs
 
     @property
+    def memberships(self) -> MembershipsRepo:
+        if self._memberships is None:
+            raise UoWNotInitializedError("memberships")
+        return self._memberships
+
+    @property
     def users(self) -> UsersRepo:
         if self._users is None:
-            raise UoWNotInitializedError("orgs")
+            raise UoWNotInitializedError("users")
         return self._users

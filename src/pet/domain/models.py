@@ -1,8 +1,15 @@
+import enum
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Self
 
 from pet.domain.value_objects import Name, PublicId
+
+
+class MemberRole(enum.StrEnum):
+    owner = "owner"
+    admin = "admin"
+    member = "member"
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +26,29 @@ class Organization:
         return cls(
             public_id=public_id,
             name=name,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class Membership:
+    public_id: PublicId
+    org_public_id: PublicId
+    user_public_id: PublicId
+    role: MemberRole
+
+    @classmethod
+    def create(
+        cls,
+        public_id: PublicId,
+        org_public_id: PublicId,
+        user_public_id: PublicId,
+        role: MemberRole,
+    ) -> Self:
+        return cls(
+            public_id=public_id,
+            org_public_id=org_public_id,
+            user_public_id=user_public_id,
+            role=role,
         )
 
 

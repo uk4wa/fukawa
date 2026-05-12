@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import logging.config
 import re
-from typing import Any, Final, Literal
+from typing import Any, Final, Literal, cast
 from urllib.parse import urlsplit
 
 import structlog
@@ -36,6 +36,7 @@ def _extract_uvicorn_access_path(record: logging.LogRecord) -> str | None:
     return _normalize_path(match.group("path"))
 
 
+# used in dev, without --no-access-logs flag
 class _UvicornAccessHealthcheckFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if record.name != "uvicorn.access":
@@ -96,12 +97,13 @@ def _make_redact_processor(sensitive_key_fragments: frozenset[str]) -> Processor
     def _redact_nested(value: Any) -> Any:
         if isinstance(value, dict):
             return {
-                k: (_REDACTED if _is_sensitive(k) else _redact_nested(v)) for k, v in value.items()
+                k: (_REDACTED if _is_sensitive(k) else _redact_nested(v))
+                for k, v in cast(dict[str, Any], value).items()
             }
         if isinstance(value, list):
-            return [_redact_nested(item) for item in value]
+            return [_redact_nested(item) for item in cast(list[Any], value)]
         if isinstance(value, tuple):
-            return tuple(_redact_nested(item) for item in value)
+            return tuple(_redact_nested(item) for item in cast(tuple[Any, ...], value))
         return value
 
     def _redact(_logger: WrappedLogger, _method_name: str, event_dict: EventDict) -> EventDict:
@@ -141,7 +143,7 @@ def configure_logging(
     ]
 
     if static_fields:
-        shared_processors.insert(0, _make_static_fields_processor(static_fields))
+        shared_processors.insert(-1, _make_static_fields_processor(static_fields))
 
     formatter_processors: tuple[Processor, ...]
     if log_format == "json":

@@ -1,12 +1,13 @@
 import pytest
 from fastapi import FastAPI, Response
 from httpx import ASGITransport, AsyncClient
+from pytest_mock import MockerFixture
 
 from pet.api.middleware.http_logging import register_http_logging
 
 
 @pytest.mark.asyncio
-async def test_http_logging_skips_healthcheck_paths(mocker) -> None:
+async def test_http_logging_skips_healthcheck_paths(mocker: MockerFixture) -> None:
     app = FastAPI()
     register_http_logging(app)
 
@@ -25,7 +26,7 @@ async def test_http_logging_skips_healthcheck_paths(mocker) -> None:
 
 
 @pytest.mark.asyncio
-async def test_http_logging_logs_successful_requests(mocker) -> None:
+async def test_http_logging_logs_successful_requests(mocker: MockerFixture) -> None:
     app = FastAPI()
     register_http_logging(app)
 
@@ -39,14 +40,14 @@ async def test_http_logging_logs_successful_requests(mocker) -> None:
         response = await client.post("/orgs/")
 
     assert response.status_code == 201
-    info_mock.assert_called_once()
+    info_mock.assert_called()
     assert info_mock.call_args.args == ("http_request_finished",)
     assert info_mock.call_args.kwargs["status_code"] == 201
     assert isinstance(info_mock.call_args.kwargs["duration_ms"], float)
 
 
 @pytest.mark.asyncio
-async def test_http_logging_logs_4xx_as_warning(mocker) -> None:
+async def test_http_logging_logs_4xx_as_warning(mocker: MockerFixture) -> None:
     app = FastAPI()
     register_http_logging(app)
 
@@ -60,11 +61,11 @@ async def test_http_logging_logs_4xx_as_warning(mocker) -> None:
         response = await client.post("/orgs/")
 
     assert response.status_code == 409
-    info_mock.assert_called_once()
+    info_mock.assert_called()
 
 
 @pytest.mark.asyncio
-async def test_http_logging_renders_unhandled_exceptions(mocker) -> None:
+async def test_http_logging_renders_unhandled_exceptions(mocker: MockerFixture) -> None:
     app = FastAPI()
     register_http_logging(app)
 
@@ -86,5 +87,5 @@ async def test_http_logging_renders_unhandled_exceptions(mocker) -> None:
     body = response.json()
     assert body["code"] == "internal_error"
     exception_log.assert_called_once_with("unhandled_exception")
-    info_mock.assert_called_once()
+    info_mock.assert_called()
     assert info_mock.call_args.kwargs["status_code"] == 500

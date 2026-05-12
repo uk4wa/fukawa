@@ -1,6 +1,7 @@
 from collections.abc import Awaitable, Callable
 from typing import Annotated
 
+import structlog
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -11,7 +12,6 @@ from pet.app.auth.exc import (
     MissingToken,
 )
 from pet.app.auth.verifier import TokenVerifierAbstract
-from pet.di.db import TransactionExecutor, get_executor
 from pet.domain.auth import Principal
 
 _bearer_scheme = HTTPBearer(
@@ -28,7 +28,6 @@ def _get_verifier(request: Request) -> TokenVerifierAbstract:
 async def get_current_principal(
     request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)],
-    executor: Annotated[TransactionExecutor, Depends(get_executor)],
 ) -> Principal:
     if credentials is None:
         raise MissingToken()
@@ -42,6 +41,7 @@ async def get_current_principal(
         raise InvalidToken("Token verification failed") from exc
 
     request.state.principal = principal
+    structlog.contextvars.bind_contextvars(user_subject=principal.subject)
     return principal
 
 
