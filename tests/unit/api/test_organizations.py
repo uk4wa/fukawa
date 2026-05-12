@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from pet.api.organizations import CreateOrgDtoIn
+from pet.api.routers.organizations import CreateOrgDtoIn
 
 
 def test_create_org_dto_applies_shared_name_validation() -> None:

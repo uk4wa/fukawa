@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from types import MappingProxyType
-from typing import Any, Final
+from typing import Any, Final, cast
 
 import jwt
 
@@ -123,7 +123,7 @@ def _coerce_str_list(value: Any) -> list[str]:
     if isinstance(value, str):
         return [value]
     if isinstance(value, list):
-        return [x for x in value if isinstance(x, str)]
+        return [x for x in cast(list[Any], value) if isinstance(x, str)]
     return []
 
 
@@ -135,7 +135,7 @@ def _extract_scopes(claims: Mapping[str, Any]) -> frozenset[str]:
 
     scp = claims.get("scp")
     if isinstance(scp, list):
-        return frozenset(s for s in scp if isinstance(s, str))
+        return frozenset(s for s in cast(list[Any], scp) if isinstance(s, str))
     return frozenset()
 
 
@@ -145,10 +145,10 @@ def _extract_realm_roles(claims: Mapping[str, Any]) -> frozenset[str]:
     if not isinstance(realm_access, dict):
         return frozenset()
 
-    roles = realm_access.get("roles")
+    roles = cast(dict[str, Any], realm_access).get("roles")
     if not isinstance(roles, list):
         return frozenset()
-    return frozenset(r for r in roles if isinstance(r, str))
+    return frozenset(r for r in cast(list[Any], roles) if isinstance(r, str))
 
 
 def _extract_client_roles(claims: Mapping[str, Any]) -> Mapping[str, frozenset[str]]:
@@ -158,12 +158,12 @@ def _extract_client_roles(claims: Mapping[str, Any]) -> Mapping[str, frozenset[s
         return MappingProxyType({})
 
     out: dict[str, frozenset[str]] = {}
-    for client, body in resource_access.items():
-        if not isinstance(client, str) or not isinstance(body, dict):
+    for client, body in cast(dict[str, Any], resource_access).items():
+        if not isinstance(body, dict):
             continue
-        roles = body.get("roles")
+        roles = cast(dict[str, Any], body).get("roles")
         if isinstance(roles, list):
-            out[client] = frozenset(r for r in roles if isinstance(r, str))
+            out[client] = frozenset(r for r in cast(list[Any], roles) if isinstance(r, str))
 
     return MappingProxyType(out)
 

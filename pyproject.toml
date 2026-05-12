@@ -53,15 +53,7 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_functions = ["test_*"]
-addopts = [
-    "-ra",
-    "--strict-config",
-    "--strict-markers",
-    "--cov=pet",
-    "--cov-report=term-missing:skip-covered",
-    "--cov-report=html",
-    "--cov-branch",
-]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
 markers = ["unit: isolated fast tests", "integration: tests with real infra"]
 
 [tool.coverage.run]
@@ -101,5 +93,10 @@ extraPaths = ["src"]
 pythonVersion = "3.13"
 venvPath = "."
 venv = ".venv"
-typeCheckingMode = "standard"
+typeCheckingMode = "strict"
 reportMissingTypeStubs = false
+reportUnusedFunction = false
+reportUnknownVariableType = true
+reportUnknownMemberType = false    # слишком много шума от сторонних либ
+reportUnknownArgumentType = false  # аналогично
+reportUnnecessaryComparison = true

@@ -1,6 +1,6 @@
 import enum
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 from sqlalchemy.exc import (
     DBAPIError,
@@ -14,14 +14,15 @@ from sqlalchemy.exc import (
 )
 
 from pet.app.errors import (
-    VALIDATION_ERROR_TITLE,
     AppError,
-    AppErrorCode,
-    Conflict,
-    InternalError,
-    ServiceUnavailable,
-    UnprocessableEntity,
+    conflict,
+    internal_error,
+    organization_name_taken,
+    service_unavailable,
+    unprocessable_entity,
 )
+
+DB_OPERATION_ERRORS: Final = (SQLAlchemyError, OSError)
 
 
 class PersistenceErrorKind(enum.StrEnum):
@@ -185,7 +186,7 @@ def determine_exc(e: DBDriverError) -> PersistenceError:
 def translate_db_error(error: PersistenceError) -> AppError:
     extra: dict[str, Any] = {
         "retryable": error.retryable,
-        "cause": error.cause,
+        "cause": str(error.cause) if error.cause is not None else None,
         "constraint_name": error.constraint_name,
         "table_name": error.table_name,
         "column_name": error.column_name,
@@ -194,37 +195,29 @@ def translate_db_error(error: PersistenceError) -> AppError:
     match error.kind:
         case PersistenceErrorKind.UNIQUE:
             if error.constraint_name == "uq_organizations_name_canonical":
-                return Conflict(
-                    title="Conflict",
-                    code=AppErrorCode.ORGANIZATION_NAME_TAKEN,
-                    detail="Organization name is already taken",
-                    extra=extra,
-                )
-            return Conflict(
-                title="Conflict",
-                code=AppErrorCode.CONFLICT,
+                return organization_name_taken(extra=extra)
+            return conflict(
                 detail="Resource already exists",
                 extra=extra,
             )
+        case PersistenceErrorKind.FK:
+            return unprocessable_entity(
+                detail="Referenced resource does not exist",
+                extra=extra,
+            )
         case PersistenceErrorKind.CHECK:
-            return UnprocessableEntity(
-                title=VALIDATION_ERROR_TITLE,
-                code=AppErrorCode.VALIDATION,
+            return unprocessable_entity(
                 detail="Stored value violates validation rules",
                 extra=extra,
             )
         case PersistenceErrorKind.NOT_NULL:
             field_name = error.column_name or "field"
-            return UnprocessableEntity(
-                title=VALIDATION_ERROR_TITLE,
-                code=AppErrorCode.VALIDATION,
+            return unprocessable_entity(
                 detail=f'Field "{field_name}" cannot be null',
                 extra=extra,
             )
         case PersistenceErrorKind.OPERATIONAL | PersistenceErrorKind.TRANSIENT:
-            return ServiceUnavailable(
-                title="Service Unavailable",
-                code=AppErrorCode.SERVICE_UNAVAILABLE,
+            return service_unavailable(
                 detail="Temporary service outage",
                 extra={
                     **extra,
@@ -232,9 +225,7 @@ def translate_db_error(error: PersistenceError) -> AppError:
                 },
             )
         case _:
-            return InternalError(
-                title="Internal Server Error",
-                code=AppErrorCode.INTERNAL_ERROR,
+            return internal_error(
                 detail="Unexpected error",
                 extra={
                     **extra,

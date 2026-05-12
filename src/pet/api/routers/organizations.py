@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field, StrictStr, field_validator
 
-from pet.api.auth import required_scopes
+from pet.api.auth import CurrentPrincipal, required_scopes
 from pet.app.usecases.organizations import CreateOrganizationCmdIn, create_organization_cmd
 from pet.di.db import Executor
 from pet.domain.value_objects import ORG_NAME_DESCRIPTION, validate_org_name
@@ -35,8 +35,9 @@ class PublicId(BaseModel):
 )
 async def create_organization(
     org: CreateOrgDtoIn,
+    principal: CurrentPrincipal,
     executor: Executor,
 ) -> PublicId:
-    cmd = CreateOrganizationCmdIn(name=org.name)
+    cmd = CreateOrganizationCmdIn(name=org.name, principal=principal)
     public_id = await executor.run(create_organization_cmd, cmd)
-    return PublicId(public_id=public_id.val)
+    return PublicId(public_id=public_id.value)

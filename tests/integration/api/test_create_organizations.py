@@ -15,7 +15,8 @@ from pet.app.errors import VALIDATION_ERROR_TITLE, AppErrorCode
 async def test_api_organizations_create_success(
     client: AsyncClient,
     db_session: AsyncSession,
-):
+    provisioned_user: None,
+) -> None:
     name_json = {"name": "okname1"}
     response = await client.post("/orgs/", json=name_json)
 
@@ -34,8 +35,34 @@ async def test_api_organizations_create_success(
 
 @pytest.mark.asyncio
 @pytest.mark.integration
+async def test_api_organizations_create_creates_owner_membership(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    provisioned_user: None,
+) -> None:
+    response = await client.post("/orgs/", json={"name": "Acme"})
+    assert response.status_code == 201
+
+    org_public_id = response.json()["public_id"]
+
+    stmt = text(
+        """
+        SELECT m.user_role
+        FROM memberships m
+        JOIN organizations o ON o.id = m.org_id
+        WHERE o.public_id = CAST(:org_id AS uuid)
+        """
+    )
+    result = await db_session.execute(stmt, {"org_id": org_public_id})
+    row = result.one()
+    assert row.user_role == "owner"
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
 async def test_api_organizations_create_rejects_casefold_duplicate(
     client: AsyncClient,
+    provisioned_user: None,
 ) -> None:
     first = await client.post("/orgs/", json={"name": "Acme"})
     second = await client.post("/orgs/", json={"name": "acme"})
@@ -51,8 +78,9 @@ async def test_api_organizations_create_rejects_casefold_duplicate(
 @pytest.mark.integration
 async def test_api_organizations_create_rejects_unicode_casefold_duplicate(
     client: AsyncClient,
+    provisioned_user: None,
 ) -> None:
-    first = await client.post("/orgs/", json={"name": "Stra\u00dfe"})
+    first = await client.post("/orgs/", json={"name": "Straße"})
     second = await client.post("/orgs/", json={"name": "STRASSE"})
 
     assert first.status_code == 201
@@ -74,6 +102,7 @@ async def test_api_organizations_create_rejects_unicode_casefold_duplicate(
 )
 async def test_api_organizations_create_returns_422_for_domain_validation(
     client: AsyncClient,
+    provisioned_user: None,
     name: str,
     expected_detail: str,
 ) -> None:
@@ -92,8 +121,9 @@ async def test_api_organizations_create_returns_422_for_domain_validation(
 async def test_api_organizations_create_normalizes_unicode_name_to_nfc(
     client: AsyncClient,
     db_session: AsyncSession,
+    provisioned_user: None,
 ) -> None:
-    original = "A\u0308rger Stra\u00dfe"
+    original = "Ärger Straße"
     response = await client.post("/orgs/", json={"name": original})
 
     assert response.status_code == 201
@@ -109,8 +139,9 @@ async def test_api_organizations_create_normalizes_unicode_name_to_nfc(
 @pytest.mark.integration
 async def test_api_organizations_create_returns_422_for_canonical_length_validation(
     client: AsyncClient,
+    provisioned_user: None,
 ) -> None:
-    response = await client.post("/orgs/", json={"name": "\u00df" * 64})
+    response = await client.post("/orgs/", json={"name": "ß" * 64})
 
     assert response.status_code == 422
 
@@ -142,6 +173,7 @@ async def test_api_openapi_describes_organization_name_contract(
 @pytest.mark.parametrize("payload", [{}, {"name": 123}])
 async def test_api_organizations_create_returns_422_for_request_validation(
     client: AsyncClient,
+    provisioned_user: None,
     payload: dict[str, object],
 ) -> None:
     response = await client.post("/orgs/", json=payload)
@@ -152,6 +184,17 @@ async def test_api_organizations_create_returns_422_for_request_validation(
     assert body["title"] == VALIDATION_ERROR_TITLE
     assert body["detail"] == "Request validation failed"
     assert body["code"] == AppErrorCode.VALIDATION
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_api_organizations_create_returns_404_when_user_not_provisioned(
+    client: AsyncClient,
+) -> None:
+    response = await client.post("/orgs/", json={"name": "Acme"})
+
+    assert response.status_code == 404
+    assert response.json()["code"] == AppErrorCode.NOT_FOUND
 
 
 @pytest.mark.asyncio

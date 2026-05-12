@@ -15,8 +15,8 @@ class Principal:
     first_name: str | None = None
     last_name: str | None = None
 
-    scopes: frozenset[str] = field(default_factory=frozenset)
-    realm_roles: frozenset[str] = field(default_factory=frozenset)
+    scopes: frozenset[str] = field(default_factory=lambda: frozenset())
+    realm_roles: frozenset[str] = field(default_factory=lambda: frozenset())
     client_roles: Mapping[str, frozenset[str]] = field(
         default_factory=lambda: MappingProxyType({}),
     )

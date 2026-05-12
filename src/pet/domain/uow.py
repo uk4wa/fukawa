@@ -2,12 +2,14 @@ from collections.abc import Awaitable, Callable
 from types import TracebackType
 from typing import Concatenate, Protocol, Self
 
-from pet.domain.repos import OrganizationsRepo, UsersRepo
+from pet.domain.repos import MembershipsRepo, OrganizationsRepo, UsersRepo
 
 
 class UnitOfWork(Protocol):
     @property
     def orgs(self) -> OrganizationsRepo: ...
+    @property
+    def memberships(self) -> MembershipsRepo: ...
     @property
     def users(self) -> UsersRepo: ...
 
@@ -26,8 +28,6 @@ class UnitOfWork(Protocol):
 
 
 class TransactionExecutorProtocol(Protocol):
-    _uow_factory: Callable[[], UnitOfWork]
-
     async def run[T, **P](
         self,
         handler: Callable[Concatenate[UnitOfWork, P], Awaitable[T]],

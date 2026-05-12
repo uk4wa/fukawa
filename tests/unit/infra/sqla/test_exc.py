@@ -12,10 +12,6 @@ from sqlalchemy.exc import (
 
 from pet.app.errors import (
     AppError,
-    Conflict,
-    InternalError,
-    ServiceUnavailable,
-    UnprocessableEntity,
 )
 from pet.infra.sqla.db.exc import (
     PersistenceError,
@@ -209,7 +205,7 @@ def test_translate_db_error_returns_conflict_for_unique(mocker: MockerFixture):
 
     result = translate_db_error(error)
 
-    assert isinstance(result, Conflict)
+    assert isinstance(result, AppError)
     assert result.title == "Conflict"
     assert result.detail == "Organization name is already taken"
     assert result.code == "organization_name_taken"
@@ -224,7 +220,7 @@ def test_translate_db_error_returns_internall_for_non_unique(mocker: MockerFixtu
 
     result = translate_db_error(error)
 
-    assert isinstance(result, ServiceUnavailable)
+    assert isinstance(result, AppError)
     assert result.title == "Service Unavailable"
     assert result.detail == "Temporary service outage"
     assert result.code == "service_unavailable"
@@ -238,7 +234,7 @@ def test_translate_db_error_returns_generic_conflict_for_unknown_unique_constrai
 
     result = translate_db_error(error)
 
-    assert isinstance(result, Conflict)
+    assert isinstance(result, AppError)
     assert result.code == "conflict"
 
 
@@ -250,7 +246,8 @@ def test_translate_db_error_returns_generic_validation_error_for_check_constrain
 
     result = translate_db_error(error)
 
-    assert isinstance(result, UnprocessableEntity)
+    assert isinstance(result, AppError)
+    assert result.title == "Unprocessable Entity"
     assert result.code == "validation_error"
     assert result.detail == "Stored value violates validation rules"
 
@@ -264,7 +261,8 @@ def test_translate_db_error_returns_validation_error_for_not_null_column() -> No
 
     result = translate_db_error(error)
 
-    assert isinstance(result, UnprocessableEntity)
+    assert isinstance(result, AppError)
+    assert result.title == "Unprocessable Entity"
     assert result.code == "validation_error"
     assert result.detail == 'Field "name" cannot be null'
 
@@ -274,6 +272,20 @@ def test_translate_db_error_returns_internal_error_for_unknown_db_error() -> Non
 
     result = translate_db_error(error)
 
-    assert isinstance(result, InternalError)
     assert isinstance(result, AppError)
     assert result.code == "internal_error"
+
+
+def test_translate_db_error_returns_unprocessable_entity_for_fk_violation() -> None:
+    error = PersistenceError(
+        kind=PersistenceErrorKind.FK,
+        constraint_name="fk_memberships_organization_id",
+        table_name="memberships",
+    )
+
+    result = translate_db_error(error)
+
+    assert isinstance(result, AppError)
+    assert result.title == "Unprocessable Entity"
+    assert result.code == "validation_error"
+    assert result.detail == "Referenced resource does not exist"

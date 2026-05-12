@@ -1,16 +1,17 @@
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pet.domain.models import Membership as MembershipDomain
 from pet.domain.models import Organization as OrgDomain
 from pet.domain.models import User as UserDomain
 from pet.domain.value_objects import PublicId
-from pet.infra.sqla.db.exc import determine_exc
+from pet.infra.sqla.db.exc import DB_OPERATION_ERRORS, determine_exc
+from pet.infra.sqla.db.models import Membership as MembershipORM
 from pet.infra.sqla.db.models import Organization as OrgORM
+from pet.infra.sqla.db.models import OrgRole
 from pet.infra.sqla.db.models import User as UserORM
-
-DB_OPERATION_ERRORS = (SQLAlchemyError, OSError)
 
 
 class Repo:
@@ -20,21 +21,56 @@ class Repo:
 
 class SQLAlchemyOrganizationsRepo(Repo):
     async def create(self, org: OrgDomain) -> None:
-        orm = SQLAlchemyOrganizationsRepo._to_orm(org)
-        self._session.add(orm)
-
-    @staticmethod
-    def _to_orm(domain: OrgDomain) -> OrgORM:
-        return OrgORM(
-            public_id=domain.public_id.value,
-            name=domain.name.value,
+        self._session.add(
+            OrgORM(
+                public_id=org.public_id.value,
+                name=org.name.value,
+            )
         )
 
 
-class SQLAlchemyUsersRepo(Repo):
-    async def create(self, user: UserDomain) -> None:
-        self._session.add(self._to_orm(user))
+class SQLAlchemyMembershipsRepo(Repo):
+    async def create(self, membership: MembershipDomain) -> None:
+        # Due to a postgresql petition, the post with 3 queries instead of 1
+        # stmt = insert(MembershipORM).from_select(
+        #     ["public_id", "user_id", "org_id", "user_role"],
+        #     select(
+        #         sa.literal(membership.public_id.value).label("public_id"),
+        #         UserORM.id.label("user_id"),
+        #         OrgORM.id.label("org_id"),
+        #         sa.literal(OrgRole(membership.role.value)).label("user_role"),
+        #     ).where(
+        #         UserORM.public_id == membership.user_public_id.value,
+        #         OrgORM.public_id == membership.org_public_id.value,
+        #     ),
+        # )
+        # is more readable, and the postgresql query planner
+        # ends up doing the same thing.
+        user_id_subq = (
+            select(UserORM.id)
+            .where(UserORM.public_id == membership.user_public_id.value)
+            .scalar_subquery()
+        )
+        org_id_subq = (
+            select(OrgORM.id)
+            .where(OrgORM.public_id == membership.org_public_id.value)
+            .scalar_subquery()
+        )
 
+        stmt = insert(MembershipORM).values(
+            public_id=membership.public_id.value,
+            user_id=user_id_subq,
+            org_id=org_id_subq,
+            user_role=OrgRole(membership.role.value),
+        )
+
+        try:
+            await self._session.execute(stmt)
+        except DB_OPERATION_ERRORS as e:
+            raise determine_exc(e) from e
+
+
+class SQLAlchemyUsersRepo(Repo):
     async def get_by_auth_identity(self, issuer: str, subject: str) -> UserDomain | None:
         stmt = select(UserORM).where(
             UserORM.auth_issuer == issuer,
@@ -49,33 +85,33 @@ class SQLAlchemyUsersRepo(Repo):
         orm = result.scalar_one_or_none()
         return self._to_domain(orm) if orm else None
 
-    async def upsert(self, user: UserDomain) -> UserDomain:
-        stmt = (
-            insert(UserORM)
-            .values(
-                public_id=user.public_id.value,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                username=user.username,
-                email=user.email,
-                auth_issuer=user.auth_issuer,
-                auth_subject=user.auth_subject,
-                last_login_at=user.last_login_at,
-                created_at=user.created_at,
-                updated_at=user.updated_at,
-            )
-            .on_conflict_do_update(
-                constraint="uq_users_auth_subject_auth_issuer",
-                set_={
-                    "username": user.username,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "last_login_at": user.last_login_at,
-                    "updated_at": user.updated_at,
-                },
-            )
-            .returning(UserORM)
+    async def upsert(self, user: UserDomain) -> tuple[UserDomain, bool]:
+        insert_stmt = insert(UserORM).values(
+            public_id=user.public_id.value,
+            auth_issuer=user.auth_issuer,
+            auth_subject=user.auth_subject,
+            email=user.email,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            last_login_at=user.last_login_at,
+            updated_at=user.updated_at,
+            created_at=user.created_at,
+        )
+
+        stmt = insert_stmt.on_conflict_do_update(
+            constraint="uq_users_auth_subject_auth_issuer",
+            set_={
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "last_login_at": user.last_login_at,
+                "updated_at": user.updated_at,
+            },
+        ).returning(
+            UserORM,
+            sa.literal_column("(xmax = 0)", sa.Boolean).label("inserted"),
         )
 
         try:
@@ -83,8 +119,8 @@ class SQLAlchemyUsersRepo(Repo):
         except DB_OPERATION_ERRORS as e:
             raise determine_exc(e) from e
 
-        orm = result.scalar_one()
-        return self._to_domain(orm)
+        row = result.one()
+        return self._to_domain(row[0]), row.inserted
 
     @staticmethod
     def _to_domain(orm: UserORM) -> UserDomain:
@@ -99,19 +135,4 @@ class SQLAlchemyUsersRepo(Repo):
             last_login_at=orm.last_login_at,
             created_at=orm.created_at,
             updated_at=orm.updated_at,
-        )
-
-    @staticmethod
-    def _to_orm(domain: UserDomain) -> UserORM:
-        return UserORM(
-            public_id=domain.public_id.value,
-            first_name=domain.first_name,
-            last_name=domain.last_name,
-            username=domain.username,
-            email=domain.email,
-            auth_issuer=domain.auth_issuer,
-            auth_subject=domain.auth_subject,
-            last_login_at=domain.last_login_at,
-            created_at=domain.created_at,
-            updated_at=domain.updated_at,
         )

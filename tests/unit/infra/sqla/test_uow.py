@@ -19,10 +19,12 @@ async def test_uow_aenter_failed(mocker: MockerFixture):
     expected_err = OrgsRepoFactoryException(message="orgs_repos_factory_exception")
     orgs_repo_factory_mock = mocker.Mock(side_effect=expected_err)
     users_repo_factory_mock = mocker.Mock()
+    memberships_repo_factory_mock = mocker.Mock()
     uow = SQLAlchemyUnitOfWork(
         session_factory_mock,
         orgs_repo_factory_mock,
         users_repo_factory_mock,
+        memberships_repo_factory_mock,
     )
 
     with pytest.raises(OrgsRepoFactoryException) as e:
@@ -44,10 +46,12 @@ async def test_uow_get_session(mocker: MockerFixture):
     session_factory_mock = mocker.Mock(return_value=session_mock)
     orgs_repo_factory_mock = mocker.Mock()
     users_repo_factory_mock = mocker.Mock()
+    memberships_repo_factory_mock = mocker.Mock()
     uow = SQLAlchemyUnitOfWork(
         session_factory_mock,
         orgs_repo_factory_mock,
         users_repo_factory_mock,
+        memberships_repo_factory_mock,
     )
 
     expected_err = UoWNotInitializedError(field="session")
@@ -70,10 +74,12 @@ async def test_uow_get_orgs(mocker: MockerFixture):
     session_factory_mock = mocker.Mock(return_value=session_mock)
     orgs_repo_factory_mock = mocker.Mock()
     users_repo_factory_mock = mocker.Mock()
+    memberships_repo_factory_mock = mocker.Mock()
     uow = SQLAlchemyUnitOfWork(
         session_factory_mock,
         orgs_repo_factory_mock,
         users_repo_factory_mock,
+        memberships_repo_factory_mock,
     )
 
     expected_err = UoWNotInitializedError(field="orgs")

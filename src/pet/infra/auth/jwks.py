@@ -1,5 +1,6 @@
 import asyncio
 import time
+from typing import Any, cast
 
 import httpx
 from jwt import PyJWK, PyJWKSet, PyJWTError
@@ -142,7 +143,7 @@ class JWKSProvider:
             raise JwksProviderUnavailable("JWKS payload has unexpected shape")
 
         try:
-            jwk_set = PyJWKSet.from_dict(payload)
+            jwk_set = PyJWKSet.from_dict(cast(dict[str, Any], payload))
 
         except (PyJWTError, KeyError, TypeError, ValueError) as exc:
             logger.error(
@@ -248,7 +249,7 @@ class JWKSProvider:
             )
             return False
 
-        if self._allowed_algorithms is not None:
+        if self._allowed_algorithms:
             try:
                 algorithm_name = key.algorithm_name
             except PyJWTError:
@@ -297,7 +298,7 @@ class JWKSProvider:
         elapsed = now - self._last_forced_refresh_at_monotonic
 
         if elapsed < self._min_forced_refresh_interval_seconds:
-            logger.warning(
+            logger.info(
                 "jwks_forced_refresh_rate_limited",
                 jwks_uri=self._jwks_uri,
                 kid=kid,

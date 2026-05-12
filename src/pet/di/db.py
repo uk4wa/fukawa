@@ -5,7 +5,11 @@ from fastapi import Depends, Request
 
 from pet.app.transaction_executor import TransactionExecutor
 from pet.domain.uow import TransactionExecutorProtocol, UnitOfWork
-from pet.infra.sqla.db.repos import SQLAlchemyOrganizationsRepo, SQLAlchemyUsersRepo
+from pet.infra.sqla.db.repos import (
+    SQLAlchemyMembershipsRepo,
+    SQLAlchemyOrganizationsRepo,
+    SQLAlchemyUsersRepo,
+)
 from pet.infra.sqla.uow import SQLAlchemyUnitOfWork
 
 
@@ -17,6 +21,7 @@ def get_uow_factory(r: Request) -> Callable[[], UnitOfWork]:
             session_factory=sf,
             orgs_repo_factory=SQLAlchemyOrganizationsRepo,
             users_repo_factory=SQLAlchemyUsersRepo,
+            memberships_repo_factory=SQLAlchemyMembershipsRepo,
         )
 
     return factory

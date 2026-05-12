@@ -33,9 +33,10 @@ class TransactionExecutor:
     ) -> T:
         started_at = time.perf_counter()
         handler_name = _handler_name(handler)
-        logger.debug("transaction_started", use_case_handler=handler_name)
 
         with structlog.contextvars.bound_contextvars(use_case_handler=handler_name):
+            logger.debug("transaction_started")
+
             async with self._uow_factory() as uow:
                 try:
                     result = await handler(uow, *args, **kwargs)
@@ -49,7 +50,7 @@ class TransactionExecutor:
 
                     return result
                 except PersistenceError as e:
-                    logger.warning(
+                    logger.info(
                         "transaction_db_error",
                         duration_ms=_duration_ms(started_at),
                         persistence_error_kind=e.kind,

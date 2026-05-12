@@ -2,13 +2,13 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
-import structlog
-
+from pet.app.errors import not_found
 from pet.config.logging import get_logger
-from pet.domain.models import Organization
+from pet.domain.auth import Principal
+from pet.domain.models import MemberRole, Membership, Organization
 from pet.domain.uow import UnitOfWork
 from pet.domain.value_objects import Name as NameVO
-from pet.domain.value_objects import PublicId as PublicIdVO
+from pet.domain.value_objects import PublicId
 
 logger = get_logger(__name__)
 
@@ -16,11 +16,7 @@ logger = get_logger(__name__)
 @dataclass(frozen=True)
 class CreateOrganizationCmdIn:
     name: str
-
-
-@dataclass
-class PublicId:
-    val: UUID
+    principal: Principal
 
 
 async def create_organization_cmd(
@@ -28,23 +24,38 @@ async def create_organization_cmd(
     cmd: CreateOrganizationCmdIn,
     uuid_gen: Callable[[], UUID] = uuid4,
 ) -> PublicId:
-    structlog.contextvars.bind_contextvars(
-        use_case="create_organization",
+    org_public_id = PublicId.create(uuid_gen())
+    logger.debug(
+        "organization_create_started",
         organization_name_length=len(cmd.name),
+        organization_public_id=org_public_id.value,
     )
-    logger.debug("organization_create_started")
 
-    public_id = uuid_gen()
+    user = await uow.users.get_by_auth_identity(
+        issuer=cmd.principal.issuer,
+        subject=cmd.principal.subject,
+    )
+    if user is None:
+        raise not_found("User not found")
 
-    structlog.contextvars.bind_contextvars(organization_public_id=str(public_id))
-
-    domain_org = Organization.create(
-        public_id=PublicIdVO.create(public_id),
+    org = Organization.create(
+        public_id=org_public_id,
         name=NameVO.create(cmd.name),
     )
 
-    await uow.orgs.create(domain_org)
+    membership = Membership.create(
+        public_id=PublicId.create(uuid_gen()),
+        org_public_id=org.public_id,
+        user_public_id=user.public_id,
+        role=MemberRole.owner,
+    )
 
-    logger.debug("organization_create_staged")
+    await uow.orgs.create(org)
+    await uow.memberships.create(membership)
 
-    return PublicId(public_id)
+    logger.debug(
+        "organization_create_staged",
+        organization_public_id=org_public_id.value,
+    )
+
+    return org_public_id
